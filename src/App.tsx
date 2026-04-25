@@ -1,12 +1,15 @@
 import { BrowserRouter, Navigate, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { useCallback, useEffect, useState } from 'react'
-import { BookOpen, GraduationCap, LayoutDashboard, LogOut, Mail, ShieldCheck, UserRoundPlus } from 'lucide-react'
+import { BookOpen, GraduationCap, LayoutDashboard, LogOut, Mail, ShieldCheck, UserRoundPlus, Users, ClipboardList, Database } from 'lucide-react'
 import LoginPage from './pages/Login'
 import RegisterPage from './pages/Register'
 import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
 import StudentDashboard from './pages/student/StudentDashboard'
 import ProfesorDashboard from './pages/profesor/ProfesorDashboard'
+import AdminDashboard from './pages/admin/AdminDashboard'
+import AdminActivityTypesPage from './pages/admin/AdminActivityTypesPage'
+import AdminResourcePoolsPage from './pages/admin/AdminResourcePoolsPage'
 import type { Course, User } from './types'
 import { authApi } from './lib/api'
 
@@ -14,16 +17,19 @@ import styles from './App.module.css'
 
 const iconProps = { size: 16, strokeWidth: 1.5 }
 
-type Role = 'student' | 'profesor'
-
-const rolePathMap: Record<string, string> = {
-  STUDENT: '/student',
-  PROFESSOR: '/profesor',
-  ADMIN: '/profesor',
-  AUDIT: '/profesor',
+const rolePathMap: Record<User['role'], string> = {
+  student: '/student',
+  profesor: '/profesor',
+  admin: '/admin/users',
+  audit: '/profesor',
 }
 
-const mapRoleToAppRole = (role: string): Role => (role === 'STUDENT' ? 'student' : 'profesor')
+const mapRoleToAppRole = (role: string): User['role'] => {
+  if (role === 'STUDENT') return 'student'
+  if (role === 'PROFESSOR') return 'profesor'
+  if (role === 'ADMIN') return 'admin'
+  return 'audit'
+}
 
 const toAppUser = (profile: { id: string; email: string; firstName: string; lastName: string; role: string }): User => ({
   id: profile.id,
@@ -33,7 +39,7 @@ const toAppUser = (profile: { id: string; email: string; firstName: string; last
 })
 
 interface AuthenticatedLayoutProps {
-  role: Role
+  role: User['role']
   onLogout: () => Promise<void>
   children: React.ReactNode
 }
@@ -45,18 +51,26 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ role, onLogou
           { to: '/student', label: 'Dashboard', icon: LayoutDashboard },
           { to: '/student', label: 'Cursuri', icon: BookOpen },
         ]
-      : [
-          { to: '/profesor', label: 'Dashboard', icon: LayoutDashboard },
-          { to: '/profesor', label: 'Cursuri', icon: BookOpen },
-          { to: '/profesor', label: 'Profesor', icon: GraduationCap },
-        ]
+      : role === 'admin'
+        ? [
+            { to: '/admin/users', label: 'Users', icon: Users },
+            { to: '/admin/activity-types', label: 'Activity Types', icon: ClipboardList },
+            { to: '/admin/resources', label: 'Resource Pool', icon: Database },
+          ]
+        : [
+            { to: '/profesor', label: 'Dashboard', icon: LayoutDashboard },
+            { to: '/profesor', label: role === 'audit' ? 'Audit View' : 'Cursuri', icon: BookOpen },
+            { to: '/profesor', label: 'Profesor', icon: GraduationCap },
+          ]
+
+  const portalLabel = role === 'student' ? 'Student Portal' : role === 'admin' ? 'Admin Portal' : role === 'audit' ? 'Audit Portal' : 'Profesor Portal'
 
   return (
     <div className={styles.authenticatedShell}>
       <aside className={styles.sidebar}>
         <div className={styles.logoArea}>
           <div className={styles.logoTitle}>UniDigital</div>
-          <div className={styles.logoHint}>{role === 'student' ? 'Student Portal' : 'Professor Portal'}</div>
+          <div className={styles.logoHint}>{portalLabel}</div>
         </div>
 
         <nav className={styles.sidebarNav}>
@@ -108,7 +122,7 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
 }) => {
   const location = useLocation()
   const navigate = useNavigate()
-  const isAuthenticatedPath = location.pathname.startsWith('/student') || location.pathname.startsWith('/profesor')
+  const isAuthenticatedPath = location.pathname.startsWith('/student') || location.pathname.startsWith('/profesor') || location.pathname.startsWith('/admin')
 
   useEffect(() => {
     if (!authReady || !currentUser) {
@@ -116,9 +130,13 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
     }
 
     if (location.pathname === '/' || location.pathname === '/login' || location.pathname === '/register') {
-      navigate(rolePathMap[currentUser.role.toUpperCase()] ?? '/login', { replace: true })
+      navigate(rolePathMap[currentUser.role] ?? '/login', { replace: true })
     }
   }, [authReady, currentUser, location.pathname, navigate])
+
+  if (!authReady && isAuthenticatedPath) {
+    return <div className={styles.appShell}>Se încarcă sesiunea...</div>
+  }
 
   return (
     <div className={styles.appShell}>
@@ -160,10 +178,46 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
         />
         <Route
           path="/profesor"
-          element={authReady && currentUser?.role === 'profesor'
+          element={authReady && (currentUser?.role === 'profesor' || currentUser?.role === 'audit')
             ? (
-                <AuthenticatedLayout role="profesor" onLogout={onLogout}>
+                <AuthenticatedLayout role={currentUser.role} onLogout={onLogout}>
                   <ProfesorDashboard currentUser={currentUser} courses={courses} onCreateCourse={onCreateCourse} />
+                </AuthenticatedLayout>
+              )
+            : <Navigate to="/login" replace />}
+        />
+        <Route
+          path="/admin"
+          element={authReady && currentUser?.role === 'admin'
+            ? <Navigate to="/admin/users" replace />
+            : <Navigate to="/login" replace />}
+        />
+        <Route
+          path="/admin/users"
+          element={authReady && currentUser?.role === 'admin'
+            ? (
+                <AuthenticatedLayout role="admin" onLogout={onLogout}>
+                  <AdminDashboard currentUser={currentUser} />
+                </AuthenticatedLayout>
+              )
+            : <Navigate to="/login" replace />}
+        />
+        <Route
+          path="/admin/activity-types"
+          element={authReady && currentUser?.role === 'admin'
+            ? (
+                <AuthenticatedLayout role="admin" onLogout={onLogout}>
+                  <AdminActivityTypesPage currentUser={currentUser} />
+                </AuthenticatedLayout>
+              )
+            : <Navigate to="/login" replace />}
+        />
+        <Route
+          path="/admin/resources"
+          element={authReady && currentUser?.role === 'admin'
+            ? (
+                <AuthenticatedLayout role="admin" onLogout={onLogout}>
+                  <AdminResourcePoolsPage currentUser={currentUser} />
                 </AuthenticatedLayout>
               )
             : <Navigate to="/login" replace />}

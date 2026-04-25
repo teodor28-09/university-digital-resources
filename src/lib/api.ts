@@ -114,11 +114,82 @@ export interface CurrentUserResponse {
 }
 
 export const authApi = {
-  login: (payload: LoginRequest) => apiRequest<AuthResponse>('/api/auth/login', { method: 'POST', body: payload }),
-  register: (payload: RegisterRequest) => apiRequest<AuthResponse>('/api/auth/register', { method: 'POST', body: payload }),
+  login: (payload: LoginRequest) => apiRequest<AuthResponse>('/api/auth/login', { method: 'POST', body: payload, skipRefresh: true }),
+  register: (payload: RegisterRequest) => apiRequest<AuthResponse>('/api/auth/register', { method: 'POST', body: payload, skipRefresh: true }),
   logout: () => apiRequest('/api/auth/logout', { method: 'POST' }),
   getMe: () => apiRequest<CurrentUserResponse>('/api/auth/me'),
-  forgotPassword: (email: string) => apiRequest('/api/auth/password/forgot', { method: 'POST', body: { email } }),
+  forgotPassword: (email: string) => apiRequest('/api/auth/password/forgot', { method: 'POST', body: { email }, skipRefresh: true }),
   validateResetToken: (token: string) => apiRequest(`/api/auth/password/validate-token?token=${encodeURIComponent(token)}`, { method: 'GET', skipRefresh: true }),
   resetPassword: (token: string, newPassword: string) => apiRequest('/api/auth/password/reset', { method: 'POST', body: { token, newPassword }, skipRefresh: true }),
+}
+
+export type AdminManageableRole = 'PROFESSOR' | 'AUDIT'
+
+export interface AdminUser {
+  id: string
+  email: string
+  firstName: string
+  lastName: string
+  role: BackendRole
+  isActive: boolean
+}
+
+export interface CreateAdminUserRequest {
+  email: string
+  firstName: string
+  lastName: string
+  role: AdminManageableRole
+}
+
+export interface UpdateAdminUserRoleRequest {
+  role: AdminManageableRole
+}
+
+export interface ActivityType {
+  id: string
+  name: string
+  tokensRequired: number
+  isActive: boolean
+}
+
+export interface CreateActivityTypeRequest {
+  name: string
+  tokensRequired: number
+}
+
+export interface UpdateActivityTypeRequest {
+  name: string
+  tokensRequired: number
+}
+
+export type ResourcePoolType = 'TOKEN' | 'VPS'
+
+export interface ResourcePool {
+  id: string
+  type: ResourcePoolType
+  totalAmount: number
+  allocatedAmount: number
+  availableAmount: number
+}
+
+export interface SetResourcePoolRequest {
+  type: ResourcePoolType
+  totalAmount: number
+}
+
+export const adminApi = {
+  createUser: (payload: CreateAdminUserRequest) => apiRequest<AdminUser>('/api/admin/users', { method: 'POST', body: payload }),
+  listUsers: () => apiRequest<AdminUser[]>('/api/admin/users'),
+  updateUserRole: (userId: string, payload: UpdateAdminUserRoleRequest) => apiRequest<AdminUser>(`/api/admin/users/${userId}/role`, { method: 'PATCH', body: payload }),
+  deactivateUser: (userId: string) => apiRequest(`/api/admin/users/${userId}/deactivate`, { method: 'PATCH' }),
+  reactivateUser: (userId: string) => apiRequest(`/api/admin/users/${userId}/reactivate`, { method: 'PATCH' }),
+
+  createActivityType: (payload: CreateActivityTypeRequest) => apiRequest<ActivityType>('/api/admin/activity-types', { method: 'POST', body: payload }),
+  listActivityTypes: () => apiRequest<ActivityType[]>('/api/admin/activity-types'),
+  updateActivityType: (id: string, payload: UpdateActivityTypeRequest) => apiRequest<ActivityType>(`/api/admin/activity-types/${id}`, { method: 'PUT', body: payload }),
+  deleteActivityType: (id: string) => apiRequest(`/api/admin/activity-types/${id}`, { method: 'DELETE' }),
+
+  setResourcePool: (payload: SetResourcePoolRequest) => apiRequest<ResourcePool>('/api/admin/resources', { method: 'POST', body: payload }),
+  addResourceTotal: (type: ResourcePoolType, amount: number) => apiRequest<ResourcePool>(`/api/admin/resources/${encodeURIComponent(type)}`, { method: 'PATCH', body: { amount } }),
+  listResourcePools: () => apiRequest<ResourcePool[]>('/api/admin/resources'),
 }

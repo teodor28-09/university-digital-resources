@@ -183,7 +183,18 @@ export const ProfesorDashboard: React.FC<ProfesorDashboardProps> = ({ currentUse
 
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>Număr maxim studenți</label>
-                  <input type="number" min={1} max={500} className={styles.formControl} value={formData.maxStudents} onChange={(e) => setFormData({ ...formData, maxStudents: Number(e.target.value) })} />
+                  <input
+                    type="number"
+                    min={1}
+                    max={500}
+                    className={styles.formControl}
+                    value={formData.maxStudents}
+                    onChange={(e) => {
+                      const raw = e.target.value
+                      const cleaned = raw.replace(/^0+(?=\d)/, '')
+                      setFormData({ ...formData, maxStudents: cleaned === '' ? 0 : Number(cleaned) })
+                    }}
+                  />
                   {errors.maxStudents && <div className={styles.formError}>{errors.maxStudents}</div>}
                 </div>
 
@@ -195,7 +206,17 @@ export const ProfesorDashboard: React.FC<ProfesorDashboardProps> = ({ currentUse
                   {formData.includeTokens && (
                     <div className={styles.formGroup}>
                       <label className={styles.formLabel}>Număr tokeni per student</label>
-                      <input type="number" min={0} className={styles.formControl} value={formData.tokensPerStudent} onChange={(e) => setFormData({ ...formData, tokensPerStudent: Number(e.target.value) })} />
+                      <input
+                        type="number"
+                        min={0}
+                        className={styles.formControl}
+                        value={formData.tokensPerStudent}
+                        onChange={(e) => {
+                          const raw = e.target.value
+                          const cleaned = raw.replace(/^0+(?=\d)/, '')
+                          setFormData({ ...formData, tokensPerStudent: cleaned === '' ? 0 : Number(cleaned) })
+                        }}
+                      />
                     </div>
                   )}
 
@@ -206,7 +227,17 @@ export const ProfesorDashboard: React.FC<ProfesorDashboardProps> = ({ currentUse
                   {formData.includeVps && (
                     <div className={styles.formGroup}>
                       <label className={styles.formLabel}>Număr abonamente VPS per student</label>
-                      <input type="number" min={0} className={styles.formControl} value={formData.vpsPerStudent} onChange={(e) => setFormData({ ...formData, vpsPerStudent: Number(e.target.value) })} />
+                      <input
+                        type="number"
+                        min={0}
+                        className={styles.formControl}
+                        value={formData.vpsPerStudent}
+                        onChange={(e) => {
+                          const raw = e.target.value
+                          const cleaned = raw.replace(/^0+(?=\d)/, '')
+                          setFormData({ ...formData, vpsPerStudent: cleaned === '' ? 0 : Number(cleaned) })
+                        }}
+                      />
                     </div>
                   )}
                 </div>

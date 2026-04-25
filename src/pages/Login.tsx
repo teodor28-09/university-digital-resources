@@ -11,7 +11,7 @@ interface LoginPageProps {
 const rolePathMap: Record<string, string> = {
   STUDENT: '/student',
   PROFESSOR: '/profesor',
-  ADMIN: '/profesor',
+  ADMIN: '/admin',
   AUDIT: '/profesor',
 }
 
