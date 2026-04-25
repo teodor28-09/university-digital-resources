@@ -60,7 +60,9 @@ const AdminCoursesPage: React.FC = () => {
               <th>Nume</th>
               <th>Profesor</th>
               <th>Necesare (tokens)</th>
-              <th>Buffer 10%</th>
+              <th>Buffer 10% (tokens)</th>
+              <th>Necesare (VPS)</th>
+              <th>Buffer 10% (VPS)</th>
               <th>Status</th>
               <th>Acțiuni</th>
             </tr>
@@ -68,13 +70,17 @@ const AdminCoursesPage: React.FC = () => {
           <tbody>
             {courses.map((c) => {
               const totalTokensNeeded = c.tokensPerStudent * c.maxStudents
-              const buffer = Math.ceil(totalTokensNeeded * 0.1)
+              const bufferTokens = Math.ceil(totalTokensNeeded * 0.1)
+              const totalVpsNeeded = c.vpsPerStudent * c.maxStudents
+              const bufferVps = Math.ceil(totalVpsNeeded * 0.1)
               return (
                 <tr key={c.id} className={c.status !== 'ACTIVE' ? '' : ''}>
                   <td>{c.name}</td>
                   <td>{c.professorName}</td>
                   <td>{totalTokensNeeded.toLocaleString()}</td>
-                  <td>{buffer.toLocaleString()}</td>
+                  <td>{bufferTokens.toLocaleString()}</td>
+                  <td>{totalVpsNeeded.toLocaleString()}</td>
+                  <td>{bufferVps.toLocaleString()}</td>
                   <td><span className={`${styles.statusBadge} ${c.status === 'ACTIVE' ? '' : ''}`}>{c.status}</span></td>
                   <td>
                     {c.status === 'PENDING_RESOURCES' && (

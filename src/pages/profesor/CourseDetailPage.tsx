@@ -104,7 +104,10 @@ const CourseDetailPage: React.FC = () => {
       {activeTab === 'materials' && (
         <section style={{ marginBottom: 18 }}>
           <h3>Materiale</h3>
-          <input type="file" onChange={onUpload} disabled={busy} />
+          <label className={styles.fileInput}>
+            <input type="file" onChange={onUpload} disabled={busy} className={styles.fileInputNative} />
+            <span className={`${styles.buttonSecondary} ${styles.fileButton}`}>{busy ? 'Încarcă...' : 'Alege fișier'}</span>
+          </label>
           <div className={styles.tableWrap} style={{ marginTop: 8 }}>
             <table className={styles.table}>
               <thead>
@@ -123,9 +126,28 @@ const CourseDetailPage: React.FC = () => {
                     <td>{(m.size / 1024).toFixed(1)} KB</td>
                     <td>{new Date(m.createdAt).toLocaleString()}</td>
                     <td>
-                      <a href={professorApi.getMaterialDownloadUrl(course.id, m.id)} className={styles.buttonSecondary} download>
-                        Descarcă
-                      </a>
+                                  <div className={styles.actions}>
+                                    <a href={professorApi.getMaterialDownloadUrl(course.id, m.id)} className={styles.buttonSecondary} download>
+                                      Descarcă
+                                    </a>
+                                    <button
+                                      className={styles.buttonDanger}
+                                      onClick={async () => {
+                                        if (!confirm('Sigur dorești să ștergi acest fișier?')) return
+                                        setBusy(true); setNotice(null)
+                                        try {
+                                          await professorApi.deleteMaterial(course.id, m.id)
+                                          await load()
+                                          setNotice('Fișier șters.')
+                                        } catch (err) {
+                                          if (err instanceof ApiError) setNotice(err.message)
+                                          else setNotice('Eroare la ștergerea fișierului.')
+                                        } finally { setBusy(false) }
+                                      }}
+                                    >
+                                      Șterge
+                                    </button>
+                                  </div>
                     </td>
                   </tr>
                 ))}

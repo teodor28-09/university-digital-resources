@@ -100,7 +100,7 @@ const CoursesPage: React.FC = () => {
       <section className={styles.sectionCard}>
         <div className={styles.sectionHeader}>
           <div>
-            <h2 className={styles.sectionTitle}>+ Create Course</h2>
+            <h2 className={styles.sectionTitle}>Create Course</h2>
             <p className={styles.sectionHint}>Cursul va avea inițial status PENDING_RESOURCES până la alocarea adminului.</p>
           </div>
         </div>

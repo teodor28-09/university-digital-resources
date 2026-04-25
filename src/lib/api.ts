@@ -274,6 +274,8 @@ export const professorApi = {
 
   listResourceRequests: (courseId: string) => apiRequest<ResourceRequestResponse[]>(`/api/professor/courses/${encodeURIComponent(courseId)}/resource-requests`),
 
+  deleteMaterial: (courseId: string, materialId: string) => apiRequest(`/api/professor/courses/${encodeURIComponent(courseId)}/materials/${encodeURIComponent(materialId)}`, { method: 'DELETE' }),
+
   approveResourceRequest: (requestId: string, note?: string) => apiRequest<ResourceRequestResponse>(`/api/professor/resource-requests/${encodeURIComponent(requestId)}/approve`, { method: 'PATCH', body: note ? { note } : undefined }),
 
   rejectResourceRequest: (requestId: string, note?: string) => apiRequest<ResourceRequestResponse>(`/api/professor/resource-requests/${encodeURIComponent(requestId)}/reject`, { method: 'PATCH', body: note ? { note } : undefined }),
