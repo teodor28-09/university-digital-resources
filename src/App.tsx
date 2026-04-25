@@ -1,16 +1,19 @@
 import { BrowserRouter, Navigate, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { useCallback, useEffect, useState } from 'react'
-import { BookOpen, GraduationCap, LayoutDashboard, LogOut, Mail, ShieldCheck, UserRoundPlus, Users, ClipboardList, Database } from 'lucide-react'
+import { BookOpen, LayoutDashboard, LogOut, Mail, ShieldCheck, UserRoundPlus, Users, ClipboardList, Database } from 'lucide-react'
 import LoginPage from './pages/Login'
 import RegisterPage from './pages/Register'
 import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
 import StudentDashboard from './pages/student/StudentDashboard'
-import ProfesorDashboard from './pages/profesor/ProfesorDashboard'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminActivityTypesPage from './pages/admin/AdminActivityTypesPage'
 import AdminResourcePoolsPage from './pages/admin/AdminResourcePoolsPage'
+import AdminCoursesPage from './pages/admin/AdminCoursesPage'
+import AdminForwardedRequestsPage from './pages/admin/AdminForwardedRequestsPage'
 import NotFound from './pages/NotFound'
+import CoursesPage from './pages/profesor/CoursesPage'
+import CourseDetailPage from './pages/profesor/CourseDetailPage'
 import type { Course, User } from './types'
 import { authApi } from './lib/api'
 
@@ -18,11 +21,11 @@ import styles from './App.module.css'
 
 const iconProps = { size: 16, strokeWidth: 1.5 }
 
-const rolePathMap: Record<User['role'], string> = {
+  const rolePathMap: Record<User['role'], string> = {
   student: '/student',
-  profesor: '/profesor',
+  profesor: '/profesor/courses',
   admin: '/admin/users',
-  audit: '/profesor',
+  audit: '/profesor/courses',
 }
 
 const mapRoleToAppRole = (role: string): User['role'] => {
@@ -56,12 +59,12 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ role, onLogou
         ? [
             { to: '/admin/users', label: 'Users', icon: Users },
             { to: '/admin/activity-types', label: 'Activity Types', icon: ClipboardList },
+            { to: '/admin/courses', label: 'Courses', icon: BookOpen },
+            { to: '/admin/forwarded-requests', label: 'Forwarded Requests', icon: ClipboardList },
             { to: '/admin/resources', label: 'Resource Pool', icon: Database },
           ]
         : [
-            { to: '/profesor', label: 'Dashboard', icon: LayoutDashboard },
-            { to: '/profesor', label: role === 'audit' ? 'Audit View' : 'Cursuri', icon: BookOpen },
-            { to: '/profesor', label: 'Profesor', icon: GraduationCap },
+            { to: '/profesor/courses', label: role === 'audit' ? 'Audit View' : 'Cursuri', icon: BookOpen },
           ]
 
   const portalLabel = role === 'student' ? 'Student Portal' : role === 'admin' ? 'Admin Portal' : role === 'audit' ? 'Audit Portal' : 'Profesor Portal'
@@ -107,7 +110,6 @@ interface AppRoutesProps {
   authReady: boolean
   courses: Course[]
   onEnroll: (courseId: string) => void
-  onCreateCourse: (courseData: Omit<Course, 'id' | 'createdAt' | 'enrolledStudents' | 'materials'>) => void
   onLogout: () => Promise<void>
   onAuthenticated: () => Promise<void>
 }
@@ -117,7 +119,6 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
   authReady,
   courses,
   onEnroll,
-  onCreateCourse,
   onLogout,
   onAuthenticated,
 }) => {
@@ -172,9 +173,25 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
         <Route
           path="/profesor"
           element={authReady && (currentUser?.role === 'profesor' || currentUser?.role === 'audit')
+            ? <Navigate to="/profesor/courses" replace />
+            : <Navigate to="/login" replace />}
+        />
+        <Route
+          path="/profesor/courses"
+          element={authReady && (currentUser?.role === 'profesor' || currentUser?.role === 'audit')
             ? (
                 <AuthenticatedLayout role={currentUser.role} onLogout={onLogout}>
-                  <ProfesorDashboard currentUser={currentUser} courses={courses} onCreateCourse={onCreateCourse} />
+                  <CoursesPage />
+                </AuthenticatedLayout>
+              )
+            : <Navigate to="/login" replace />}
+        />
+        <Route
+          path="/profesor/courses/:id"
+          element={authReady && (currentUser?.role === 'profesor' || currentUser?.role === 'audit')
+            ? (
+                <AuthenticatedLayout role={currentUser.role} onLogout={onLogout}>
+                  <CourseDetailPage />
                 </AuthenticatedLayout>
               )
             : <Navigate to="/login" replace />}
@@ -201,6 +218,26 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
             ? (
                 <AuthenticatedLayout role="admin" onLogout={onLogout}>
                   <AdminActivityTypesPage currentUser={currentUser} />
+                </AuthenticatedLayout>
+              )
+            : <Navigate to="/login" replace />}
+        />
+        <Route
+          path="/admin/courses"
+          element={authReady && currentUser?.role === 'admin'
+            ? (
+                <AuthenticatedLayout role="admin" onLogout={onLogout}>
+                  <AdminCoursesPage />
+                </AuthenticatedLayout>
+              )
+            : <Navigate to="/login" replace />}
+        />
+        <Route
+          path="/admin/forwarded-requests"
+          element={authReady && currentUser?.role === 'admin'
+            ? (
+                <AuthenticatedLayout role="admin" onLogout={onLogout}>
+                  <AdminForwardedRequestsPage />
                 </AuthenticatedLayout>
               )
             : <Navigate to="/login" replace />}
@@ -286,17 +323,6 @@ function App() {
     }
   }
 
-  const handleCreateCourse = (courseData: Omit<Course, 'id' | 'createdAt' | 'enrolledStudents' | 'materials'>) => {
-    const newCourse: Course = {
-      ...courseData,
-      id: `c-${Math.random().toString(36).slice(2, 9)}`,
-      createdAt: new Date().toISOString(),
-      enrolledStudents: [],
-      materials: [],
-    }
-    setCourses((prev) => [newCourse, ...prev])
-  }
-
   return (
     <BrowserRouter>
       <AppRoutes
@@ -304,7 +330,6 @@ function App() {
         authReady={authReady}
         courses={courses}
         onEnroll={handleEnroll}
-        onCreateCourse={handleCreateCourse}
         onLogout={handleLogout}
         onAuthenticated={refreshCurrentUser}
       />

@@ -193,3 +193,101 @@ export const adminApi = {
   addResourceTotal: (type: ResourcePoolType, amount: number) => apiRequest<ResourcePool>(`/api/admin/resources/${encodeURIComponent(type)}`, { method: 'PATCH', body: { amount } }),
   listResourcePools: () => apiRequest<ResourcePool[]>('/api/admin/resources'),
 }
+
+// Shared types for courses / materials / requests
+export type CourseStatus = 'PENDING_RESOURCES' | 'ACTIVE' | 'CLOSED'
+
+export interface CourseResponse {
+  id: string
+  name: string
+  description?: string
+  professorId: string
+  professorName: string
+  maxStudents: number
+  tokensPerStudent: number
+  vpsPerStudent: number
+  professorExtraTokens: number
+  professorExtraVps: number
+  status: CourseStatus
+  createdAt: string
+}
+
+export interface CourseMaterialResponse {
+  id: string
+  courseId: string
+  originalFilename: string
+  contentType: string
+  size: number
+  createdAt: string
+}
+
+export type RequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'FORWARDED_TO_ADMIN' | 'ADMIN_APPROVED' | 'ADMIN_REJECTED'
+export type ResourceRequestType = 'TOKEN' | 'VPS'
+
+export interface ResourceRequestResponse {
+  id: string
+  courseId: string
+  courseName: string
+  studentId: string
+  studentName: string
+  resourceType: ResourceRequestType
+  amountRequested: number
+  status: RequestStatus
+  professorNote?: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+// helper for multipart with session refresh
+async function fetchWithRefresh(input: string, init?: RequestInit, skipRefresh = false): Promise<Response> {
+  const response = await fetch(`${API_BASE_URL}${input}`, { ...init, credentials: 'include' })
+  if (response.status === 401 && !skipRefresh) {
+    const refreshed = await refreshSession()
+    if (refreshed) {
+      return fetchWithRefresh(input, init, true)
+    }
+  }
+
+  return response
+}
+
+export const professorApi = {
+  createCourse: (payload: { name: string; description?: string; maxStudents: number; tokensPerStudent: number; vpsPerStudent: number }) =>
+    apiRequest<CourseResponse>('/api/professor/courses', { method: 'POST', body: payload }),
+
+  listCourses: () => apiRequest<CourseResponse[]>('/api/professor/courses'),
+
+  getCourse: (courseId: string) => apiRequest<CourseResponse>(`/api/professor/courses/${encodeURIComponent(courseId)}`),
+
+  uploadMaterial: async (courseId: string, file: File) => {
+    const form = new FormData()
+    form.append('file', file)
+
+    const res = await fetchWithRefresh(`/api/professor/courses/${encodeURIComponent(courseId)}/materials`, { method: 'POST', body: form })
+    if (!res.ok) throw await parseError(res)
+    return (await res.json()) as CourseMaterialResponse
+  },
+
+  listMaterials: (courseId: string) => apiRequest<CourseMaterialResponse[]>(`/api/professor/courses/${encodeURIComponent(courseId)}/materials`),
+
+  getMaterialDownloadUrl: (courseId: string, materialId: string) => `${API_BASE_URL}/api/professor/courses/${encodeURIComponent(courseId)}/materials/${encodeURIComponent(materialId)}/download`,
+
+  listResourceRequests: (courseId: string) => apiRequest<ResourceRequestResponse[]>(`/api/professor/courses/${encodeURIComponent(courseId)}/resource-requests`),
+
+  approveResourceRequest: (requestId: string, note?: string) => apiRequest<ResourceRequestResponse>(`/api/professor/resource-requests/${encodeURIComponent(requestId)}/approve`, { method: 'PATCH', body: note ? { note } : undefined }),
+
+  rejectResourceRequest: (requestId: string, note?: string) => apiRequest<ResourceRequestResponse>(`/api/professor/resource-requests/${encodeURIComponent(requestId)}/reject`, { method: 'PATCH', body: note ? { note } : undefined }),
+}
+
+// Admin course allocation + forwarded requests
+export const adminCoursesApi = {
+  listCourses: (status?: CourseStatus) => apiRequest<CourseResponse[]>((status ? `/api/admin/courses?status=${encodeURIComponent(status)}` : '/api/admin/courses')),
+
+  allocateCourse: (courseId: string) => apiRequest<CourseResponse>(`/api/admin/courses/${encodeURIComponent(courseId)}/allocate`, { method: 'POST' }),
+
+  listForwardedRequests: () => apiRequest<ResourceRequestResponse[]>('/api/admin/resource-requests/forwarded'),
+
+  approveForwardedRequest: (requestId: string) => apiRequest<ResourceRequestResponse>(`/api/admin/resource-requests/${encodeURIComponent(requestId)}/approve`, { method: 'PATCH' }),
+
+  rejectForwardedRequest: (requestId: string) => apiRequest<ResourceRequestResponse>(`/api/admin/resource-requests/${encodeURIComponent(requestId)}/reject`, { method: 'PATCH' }),
+}

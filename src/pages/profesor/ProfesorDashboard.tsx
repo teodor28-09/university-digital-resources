@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { professorApi, ApiError } from '../../lib/api'
 import { CheckCircle, Clock } from 'lucide-react'
 import type { Course, User, DigitalResource } from '../../types'
 import styles from './ProfesorDashboard.module.css'
@@ -38,7 +39,7 @@ export const ProfesorDashboard: React.FC<ProfesorDashboardProps> = ({ currentUse
     return Object.keys(err).length === 0
   }
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!validate()) return
 
@@ -58,17 +59,31 @@ export const ProfesorDashboard: React.FC<ProfesorDashboardProps> = ({ currentUse
       status: 'draft',
     }
 
-    // Omit fields according to prop signature — remove id & createdAt & enrolledStudents & materials
     const payload: any = { ...newCourse }
     delete payload.id
     delete payload.createdAt
     delete payload.enrolledStudents
     delete payload.materials
 
+    // optimistic local update
     onCreateCourse(payload)
-    setShowModal(false)
-    setNotification('Curs creat cu succes (status draft).')
-    setTimeout(() => setNotification(null), 3000)
+
+    try {
+      await professorApi.createCourse({
+        name: formData.name,
+        description: formData.description,
+        maxStudents: formData.maxStudents,
+        tokensPerStudent: formData.includeTokens ? formData.tokensPerStudent : 0,
+        vpsPerStudent: formData.includeVps ? formData.vpsPerStudent : 0,
+      })
+      setNotification('Curs creat cu succes (salvat pe server).')
+    } catch (err) {
+      if (err instanceof ApiError) setNotification(`Eroare: ${err.message}`)
+      else setNotification('Eroare la crearea cursului pe server.')
+    } finally {
+      setShowModal(false)
+      setTimeout(() => setNotification(null), 4000)
+    }
   }
 
   const computeBuffer = (course: Course) => {
