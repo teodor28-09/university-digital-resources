@@ -1,4 +1,5 @@
 import React from 'react'
+import { Link } from 'react-router-dom'
 import AuthForm from '../components/AuthForm'
 
 const LoginPage: React.FC = () => {
@@ -16,6 +17,9 @@ const LoginPage: React.FC = () => {
         </div>
         <div style={{ width: 420 }}>
           <AuthForm mode="login" onSubmit={handleLogin} />
+          <div style={{ marginTop: 12, textAlign: 'right' }}>
+            <Link to="/forgot-password" style={{ fontSize: 13, color: 'var(--color-primary-600)', textDecoration: 'none' }}>Ai uitat parola?</Link>
+          </div>
         </div>
       </div>
     </div>

@@ -2,6 +2,8 @@ import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
 import { useState } from 'react'
 import LoginPage from './pages/Login'
 import RegisterPage from './pages/Register'
+import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
 import StudentDashboard from './pages/student/StudentDashboard'
 import ProfesorDashboard from './pages/profesor/ProfesorDashboard'
 import type { Course, User } from './types'
@@ -71,6 +73,8 @@ function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/student" element={<StudentDashboard currentUser={studentUser} courses={courses} onEnroll={handleEnroll} />} />
           <Route path="/profesor" element={<ProfesorDashboard currentUser={profesorUser} courses={courses} onCreateCourse={handleCreateCourse} />} />
           <Route path="/" element={<LoginPage />} />

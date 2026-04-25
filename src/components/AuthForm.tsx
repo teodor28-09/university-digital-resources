@@ -44,9 +44,17 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onSubmit }) => {
               <button type="button" className={styles.secondary} onClick={() => { setEmail(''); setPassword(''); setName('') }}>Reset</button>
             </div>
             <div className={styles.hint}>
-              {mode === 'login' ? 'Nu ai cont? Înregistrează-te.' : 'Ai deja cont? Autentifică-te.'}
+              {mode === 'login' ? 'Nu ai cont?' : 'Ai deja cont?'}
+              <a href={mode === 'login' ? '/register' : '/login'}>
+                {mode === 'login' ? ' Înregistrează-te.' : ' Autentifică-te.'}
+              </a>
+             
             </div>
+             
           </div>
+          <a href={mode === 'login' ? '/forgot-password' : ''}>
+                {mode === 'login' ? ' Ai uitat parola?' : ''}
+              </a>
         </form>
       </div>
     </div>
