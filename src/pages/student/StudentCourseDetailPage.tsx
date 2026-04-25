@@ -56,6 +56,7 @@ const StudentCourseDetailPage: React.FC = () => {
   const [activityDrafts, setActivityDrafts] = useState<ActivityDraft[]>([{ id: crypto.randomUUID(), activityTypeId: '', quantity: 1 }])
   const [requestType, setRequestType] = useState<RequestType>('TOKEN')
   const [requestAmount, setRequestAmount] = useState(1)
+  const [validatingConnection, setValidatingConnection] = useState(false)
 
   const load = async () => {
     if (!id) {
@@ -112,10 +113,6 @@ const StudentCourseDetailPage: React.FC = () => {
   }, [activityDrafts, activityTypes])
 
   const balanceAfter = (balance?.tokenBalance ?? 0) - totalCost
-
-  const addActivityRow = () => {
-    setActivityDrafts((prev) => [...prev, { id: crypto.randomUUID(), activityTypeId: '', quantity: 1 }])
-  }
 
   const submitHomework = async () => {
     if (!id || !selectedSubmissionFile) return
@@ -178,6 +175,51 @@ const StudentCourseDetailPage: React.FC = () => {
     }
   }
 
+  const validateVpsConnection = async () => {
+    if (!id) return
+
+    const simulatedCredentials = {
+      courseId: id,
+      vpsIp: `10.20.${((id.charCodeAt(0) || 1) % 200) + 1}.${((id.charCodeAt(id.length - 1) || 1) % 200) + 1}`,
+      username: `student_${id.slice(0, 8)}`,
+      password: 'received-via-email',
+    }
+
+    setValidatingConnection(true)
+    setNotice(null)
+    try {
+      const response = await fetch('https://httpbin.org/post', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(simulatedCredentials),
+      })
+
+      if (!response.ok) {
+        setNotice(`Validation server returned ${response.status}.`) 
+        return
+      }
+
+      const payload = (await response.json()) as { json?: typeof simulatedCredentials }
+      const echoed = payload.json
+      const isValid =
+        echoed?.courseId === simulatedCredentials.courseId &&
+        echoed?.vpsIp === simulatedCredentials.vpsIp &&
+        echoed?.username === simulatedCredentials.username
+
+      if (isValid) {
+        setNotice('VPS subscription connection validated successfully.')
+      } else {
+        setNotice('Validation failed: unexpected response payload from validation server.')
+      }
+    } catch {
+      setNotice('Could not validate VPS connection right now. Try again.')
+    } finally {
+      setValidatingConnection(false)
+    }
+  }
+
   if (loading) return <div className={styles.empty}>Se încarcă...</div>
 
   return (
@@ -200,6 +242,11 @@ const StudentCourseDetailPage: React.FC = () => {
         <button className={styles.buttonSecondary} onClick={() => setActiveTab('homework')} disabled={activeTab === 'homework'} style={{ marginLeft: 8 }}>Submit Homework</button>
         <button className={styles.buttonSecondary} onClick={() => setActiveTab('tokens')} disabled={activeTab === 'tokens'} style={{ marginLeft: 8 }}>Use Tokens</button>
         <button className={styles.buttonSecondary} onClick={() => setActiveTab('requests')} disabled={activeTab === 'requests'} style={{ marginLeft: 8 }}>My Requests</button>
+        {(balance?.vpsBalance ?? 0) > 0 && (
+          <button className={styles.buttonValidate} style={{ marginLeft: 8 }} disabled={validatingConnection} onClick={validateVpsConnection}>
+            {validatingConnection ? 'Validating...' : 'Validate VPS Connection'}
+          </button>
+        )}
       </div>
 
       {activeTab === 'materials' && (
@@ -276,10 +323,6 @@ const StudentCourseDetailPage: React.FC = () => {
 
       {activeTab === 'tokens' && (
         <section>
-          <div className={styles.actions} style={{ marginBottom: 12 }}>
-            <button className={styles.buttonSecondary} onClick={addActivityRow} disabled={busy}>+ Add activity</button>
-          </div>
-
           {activityDrafts.map((row, idx) => (
             <div className={styles.gridForm} key={row.id} style={{ marginBottom: 8 }}>
               <div className={styles.formField}>

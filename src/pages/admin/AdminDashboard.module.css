@@ -108,7 +108,8 @@
 .buttonPrimary,
 .buttonSecondary,
 .buttonDanger,
-.buttonGhost {
+.buttonGhost,
+.buttonValidate {
   height: 36px;
   border-radius: var(--radius-md);
   border: 1px solid transparent;
@@ -130,7 +131,8 @@
 .buttonPrimary:disabled,
 .buttonSecondary:disabled,
 .buttonDanger:disabled,
-.buttonGhost:disabled {
+.buttonGhost:disabled,
+.buttonValidate:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
@@ -194,6 +196,15 @@
 
 .buttonGhost:hover {
   background: var(--color-surface-raised);
+}
+
+.buttonValidate {
+  background: #14532d;
+  color: var(--color-surface);
+}
+
+.buttonValidate:hover {
+  background: #166534;
 }
 
 /* Larger request button to avoid wrapping */

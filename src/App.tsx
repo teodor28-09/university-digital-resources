@@ -15,6 +15,7 @@ import NotFound from './pages/NotFound'
 import CoursesPage from './pages/profesor/CoursesPage'
 import CourseDetailPage from './pages/profesor/CourseDetailPage'
 import StudentCourseDetailPage from './pages/student/StudentCourseDetailPage'
+import AuditPanelPage from './pages/audit/AuditPanelPage'
 import type { User } from './types'
 import { authApi } from './lib/api'
 
@@ -26,7 +27,7 @@ const iconProps = { size: 16, strokeWidth: 1.5 }
   student: '/student',
   profesor: '/profesor/courses',
   admin: '/admin/users',
-  audit: '/profesor/courses',
+    audit: '/audit',
 }
 
 const mapRoleToAppRole = (role: string): User['role'] => {
@@ -64,8 +65,12 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ role, onLogou
             { to: '/admin/forwarded-requests', label: 'Forwarded Requests', icon: ClipboardList },
             { to: '/admin/resources', label: 'Resource Pool', icon: Database },
           ]
+        : role === 'audit'
+          ? [
+              { to: '/audit', label: 'Audit Panel', icon: ClipboardList },
+            ]
         : [
-            { to: '/profesor/courses', label: role === 'audit' ? 'Audit View' : 'Cursuri', icon: BookOpen },
+            { to: '/profesor/courses', label: 'Cursuri', icon: BookOpen },
           ]
 
   const portalLabel = role === 'student' ? 'Student Portal' : role === 'admin' ? 'Admin Portal' : role === 'audit' ? 'Audit Portal' : 'Profesor Portal'
@@ -123,7 +128,7 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
 }) => {
   const location = useLocation()
   const navigate = useNavigate()
-  const isAuthenticatedPath = location.pathname.startsWith('/student') || location.pathname.startsWith('/profesor') || location.pathname.startsWith('/admin')
+  const isAuthenticatedPath = location.pathname.startsWith('/student') || location.pathname.startsWith('/profesor') || location.pathname.startsWith('/admin') || location.pathname.startsWith('/audit')
 
   useEffect(() => {
     if (!authReady || !currentUser) {
@@ -191,15 +196,15 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
         />
         <Route
           path="/profesor"
-          element={authReady && (currentUser?.role === 'profesor' || currentUser?.role === 'audit')
+          element={authReady && currentUser?.role === 'profesor'
             ? <Navigate to="/profesor/courses" replace />
             : <Navigate to="/login" replace />}
         />
         <Route
           path="/profesor/courses"
-          element={authReady && (currentUser?.role === 'profesor' || currentUser?.role === 'audit')
+          element={authReady && currentUser?.role === 'profesor'
             ? (
-                <AuthenticatedLayout role={currentUser.role} onLogout={onLogout}>
+                <AuthenticatedLayout role="profesor" onLogout={onLogout}>
                   <CoursesPage />
                 </AuthenticatedLayout>
               )
@@ -207,10 +212,20 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
         />
         <Route
           path="/profesor/courses/:id"
-          element={authReady && (currentUser?.role === 'profesor' || currentUser?.role === 'audit')
+          element={authReady && currentUser?.role === 'profesor'
             ? (
-                <AuthenticatedLayout role={currentUser.role} onLogout={onLogout}>
+                <AuthenticatedLayout role="profesor" onLogout={onLogout}>
                   <CourseDetailPage />
+                </AuthenticatedLayout>
+              )
+            : <Navigate to="/login" replace />}
+        />
+        <Route
+          path="/audit"
+          element={authReady && currentUser?.role === 'audit'
+            ? (
+                <AuthenticatedLayout role="audit" onLogout={onLogout}>
+                  <AuditPanelPage />
                 </AuthenticatedLayout>
               )
             : <Navigate to="/login" replace />}

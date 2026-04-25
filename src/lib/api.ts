@@ -279,6 +279,72 @@ export interface TokenConsumptionResponse {
   createdAt: string
 }
 
+export interface AuditLogEntry {
+  id: string
+  userId: string | null
+  userEmail: string | null
+  userRole: BackendRole | null
+  action: string
+  description: string
+  entityType: string | null
+  entityId: string | null
+  createdAt: string
+}
+
+export interface PageResponse<T> {
+  content: T[]
+  totalElements: number
+  totalPages: number
+  size: number
+  number: number
+  first: boolean
+  last: boolean
+}
+
+export interface StudentCourseAuditStats {
+  studentId: string
+  studentName: string
+  studentEmail: string
+  courseId: string
+  courseName: string
+  tokensAllocated: number
+  tokensConsumed: number
+  tokensRemaining: number
+  vpsAllocated: number
+  vpsRemaining: number
+  submissionsCount: number
+  consumptionHistory: TokenConsumptionResponse[]
+}
+
+export interface CourseAuditStats {
+  courseId: string
+  courseName: string
+  professorName: string
+  maxStudents: number
+  enrolledCount: number
+  tokensAllocated: number
+  tokensConsumed: number
+  tokensRemaining: number
+  vpsAllocated: number
+  vpsRemaining: number
+  studentStats: StudentCourseAuditStats[]
+}
+
+export interface UniversityAuditStats {
+  tokenPoolTotal: number
+  tokenPoolAllocated: number
+  tokenPoolAvailable: number
+  tokensTotalConsumed: number
+  vpsPoolTotal: number
+  vpsPoolAllocated: number
+  vpsPoolAvailable: number
+  totalCourses: number
+  activeCourses: number
+  totalStudents: number
+  totalEnrollments: number
+  courseStats: CourseAuditStats[]
+}
+
 export interface ConsumeTokensEntry {
   activityTypeId: string
   quantity: number
@@ -414,4 +480,48 @@ export const adminCoursesApi = {
       method: 'PATCH',
       body: note ? { note } : undefined,
     }),
+}
+
+export interface AuditLogsQuery {
+  page?: number
+  size?: number
+  userEmail?: string
+  action?: string
+  from?: string
+  to?: string
+}
+
+const toQueryString = (params: Record<string, string | number | undefined>) => {
+  const qs = new URLSearchParams()
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== '') {
+      qs.set(key, String(value))
+    }
+  }
+  return qs.toString()
+}
+
+export const auditApi = {
+  listLogs: (query: AuditLogsQuery = {}) => {
+    const qs = toQueryString({
+      page: query.page,
+      size: query.size,
+      userEmail: query.userEmail,
+      action: query.action,
+      from: query.from,
+      to: query.to,
+    })
+    const path = qs ? `/api/audit/logs?${qs}` : '/api/audit/logs'
+    return apiRequest<PageResponse<AuditLogEntry>>(path)
+  },
+
+  listStudents: () => apiRequest<AdminUser[]>('/api/audit/students'),
+
+  getStudentStats: (studentId: string) =>
+    apiRequest<StudentCourseAuditStats[]>(`/api/audit/stats/student/${encodeURIComponent(studentId)}`),
+
+  getCourseStats: (courseId: string) =>
+    apiRequest<CourseAuditStats>(`/api/audit/stats/course/${encodeURIComponent(courseId)}`),
+
+  getUniversityStats: () => apiRequest<UniversityAuditStats>('/api/audit/stats/university'),
 }

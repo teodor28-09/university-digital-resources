@@ -25,7 +25,7 @@ const getErrorMessage = (err: unknown, fallback: string) => {
 const AdminResourcePoolsPage: React.FC<AdminResourcePoolsPageProps> = ({ currentUser }) => {
   const [loading, setLoading] = useState(true)
   const [resourcePools, setResourcePools] = useState<ResourcePool[]>([])
-  const [resourceTotals, setResourceTotals] = useState<ResourceTotalsState>({ TOKEN: 0, VPS: 0 })
+  const [, setResourceTotals] = useState<ResourceTotalsState>({ TOKEN: 0, VPS: 0 })
   const [addAmounts, setAddAmounts] = useState<ResourceTotalsState>({ TOKEN: 0, VPS: 0 })
   const [notice, setNotice] = useState<NoticeState>(null)
   const [busy, setBusy] = useState(false)

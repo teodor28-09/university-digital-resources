@@ -12,7 +12,7 @@ const rolePathMap: Record<string, string> = {
   STUDENT: '/student',
   PROFESSOR: '/profesor',
   ADMIN: '/admin',
-  AUDIT: '/profesor',
+  AUDIT: '/audit',
 }
 
 const LoginPage: React.FC<LoginPageProps> = ({ onAuthenticated }) => {
