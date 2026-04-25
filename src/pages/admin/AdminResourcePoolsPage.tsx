@@ -74,7 +74,8 @@ const AdminResourcePoolsPage: React.FC<AdminResourcePoolsPageProps> = ({ current
         VPS: updatedPools.find((p) => p.type === 'VPS')?.totalAmount ?? 0,
       })
       setAddAmounts((prev) => ({ ...prev, [type]: 0 }))
-      setNotice({ type: 'success', message: `Au fost adăugați ${amount} ${type}.` })
+      const displayType = type === 'VPS' ? 'VPS hours' : 'tokeni'
+      setNotice({ type: 'success', message: `Au fost adăugați ${amount} ${displayType}.` })
     } catch (err) {
       setNotice({ type: 'error', message: getErrorMessage(err, 'Nu s-au putut adăuga resursele.') })
     } finally {
@@ -108,10 +109,11 @@ const AdminResourcePoolsPage: React.FC<AdminResourcePoolsPageProps> = ({ current
           <div className={styles.resourcesGrid}>
             {(['TOKEN', 'VPS'] as const).map((type) => {
               const pool = poolsByType[type]
+              const displayType = type === 'VPS' ? 'VPS hours' : 'TOKEN'
 
               return (
                 <div key={type} className={styles.poolCard}>
-                  <div className={styles.poolTitle}>{type}</div>
+                  <div className={styles.poolTitle}>{displayType}</div>
                   <div className={styles.poolMeta}>
                     <div className={styles.metaItem}>
                       <div className={styles.metaLabel}>Total</div>
@@ -139,7 +141,7 @@ const AdminResourcePoolsPage: React.FC<AdminResourcePoolsPageProps> = ({ current
                           const cleaned = raw.replace(/^0+(?=\d)/, '')
                           setAddAmounts((prev) => ({ ...prev, [type]: cleaned === '' ? 0 : Number(cleaned) }))
                         }}
-                        placeholder={type === 'TOKEN' ? 'Adaugă tokeni' : 'Adaugă VPS'}
+                        placeholder={type === 'TOKEN' ? 'Adaugă tokeni' : 'Adaugă VPS hours'}
                       />
                       <button type="button" className={styles.buttonPrimary} disabled={busy} onClick={() => handleAddTotal(type)}>Adaugă</button>
                     </div>

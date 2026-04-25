@@ -10,6 +10,40 @@
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
   animation: fadeInUp 350ms ease;
+  margin-bottom: var(--space-6);
+}
+
+.tabs {
+  margin: var(--space-4) 0;
+  display: flex;
+  gap: var(--space-2);
+}
+
+.tabButton {
+  height: 36px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-md);
+  padding: 0 var(--space-4);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+}
+
+.tabButton[data-active='true'] {
+  color: var(--color-primary);
+  border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
+  background: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
+}
+
+.notice {
+  margin-bottom: var(--space-3);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  background: var(--color-accent-light);
 }
 
 .section {
@@ -104,6 +138,12 @@
   color: var(--color-text-secondary);
 }
 
+.metaLine {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin-top: var(--space-1);
+}
+
 .spotsText {
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
@@ -139,6 +179,28 @@
 }
 
 .btn:hover {
+  background: var(--color-primary-hover);
+}
+
+.btnLink,
+.btnLink:link,
+.btnLink:visited {
+  height: 36px;
+  background: var(--color-primary);
+  color: var(--color-surface);
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 0 var(--space-4);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: background 150ms ease;
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.btnLink:hover {
   background: var(--color-primary-hover);
 }
 

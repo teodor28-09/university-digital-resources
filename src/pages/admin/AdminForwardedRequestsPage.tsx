@@ -5,6 +5,7 @@ import styles from './AdminDashboard.module.css'
 const AdminForwardedRequestsPage: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [requests, setRequests] = useState<ResourceRequestResponse[]>([])
+  const [adminNotes, setAdminNotes] = useState<Record<string, string>>({})
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
 
@@ -23,7 +24,7 @@ const AdminForwardedRequestsPage: React.FC = () => {
   const approve = async (id: string) => {
     setBusy(true); setNotice(null)
     try {
-      await adminCoursesApi.approveForwardedRequest(id)
+      await adminCoursesApi.approveForwardedRequest(id, adminNotes[id]?.trim() || undefined)
       await load()
       setNotice('Cerere aprobată.')
     } catch (err) {
@@ -35,7 +36,7 @@ const AdminForwardedRequestsPage: React.FC = () => {
   const reject = async (id: string) => {
     setBusy(true); setNotice(null)
     try {
-      await adminCoursesApi.rejectForwardedRequest(id)
+      await adminCoursesApi.rejectForwardedRequest(id, adminNotes[id]?.trim() || undefined)
       await load()
       setNotice('Cerere respinsă.')
     } catch (err) {
@@ -66,6 +67,8 @@ const AdminForwardedRequestsPage: React.FC = () => {
               <th>Course</th>
               <th>Resource</th>
               <th>Amount</th>
+              <th>Professor note</th>
+              <th>Admin note</th>
               <th>Created</th>
               <th>Actions</th>
             </tr>
@@ -73,7 +76,7 @@ const AdminForwardedRequestsPage: React.FC = () => {
           <tbody>
             {requests.length === 0 && (
               <tr>
-                <td colSpan={6} className={styles.empty}>Nu există cereri către admin.</td>
+                <td colSpan={8} className={styles.empty}>Nu există cereri către admin.</td>
               </tr>
             )}
 
@@ -81,8 +84,18 @@ const AdminForwardedRequestsPage: React.FC = () => {
               <tr key={r.id}>
                 <td>{r.studentName}</td>
                 <td>{r.courseName}</td>
-                <td>{r.resourceType}</td>
-                <td>{r.amountRequested}</td>
+                <td>{r.resourceType === 'VPS' ? 'VPS hours' : 'TOKEN'}</td>
+                <td>{r.amountRequested.toLocaleString()}</td>
+                <td>{r.professorNote || '-'}</td>
+                <td>
+                  <input
+                    type="text"
+                    className={styles.input}
+                    placeholder="Optional admin note"
+                    value={adminNotes[r.id] ?? ''}
+                    onChange={(event) => setAdminNotes((prev) => ({ ...prev, [r.id]: event.target.value }))}
+                  />
+                </td>
                 <td>{new Date(r.createdAt).toLocaleString()}</td>
                 <td>
                   <div className={styles.actions}>

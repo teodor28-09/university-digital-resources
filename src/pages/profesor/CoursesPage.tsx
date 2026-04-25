@@ -149,7 +149,7 @@ const CoursesPage: React.FC = () => {
           </div>
 
           <div className={styles.formField}>
-            <label className={styles.fieldLabel}>VPS / Student</label>
+            <label className={styles.fieldLabel}>VPS hours / Student</label>
             <input
               className={styles.input}
               type="number"
@@ -175,7 +175,7 @@ const CoursesPage: React.FC = () => {
               <th>Nume</th>
               <th>Max studenți</th>
               <th>Tokens / student</th>
-              <th>VPS / student</th>
+              <th>VPS hours / student</th>
               <th>Status</th>
               <th>Detalii</th>
             </tr>

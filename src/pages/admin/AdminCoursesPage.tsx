@@ -61,8 +61,8 @@ const AdminCoursesPage: React.FC = () => {
               <th>Profesor</th>
               <th>Necesare (tokens)</th>
               <th>Buffer 10% (tokens)</th>
-              <th>Necesare (VPS)</th>
-              <th>Buffer 10% (VPS)</th>
+              <th>Necesare (VPS hours)</th>
+              <th>Buffer 10% (VPS hours)</th>
               <th>Status</th>
               <th>Acțiuni</th>
             </tr>

@@ -13,7 +13,7 @@ export const ResourceChip: React.FC<ResourceChipProps> = ({ type, amount }) => {
   return (
     <span className={styles.chip}>
       <Icon size={16} strokeWidth={1.5} className={styles.icon} aria-hidden="true" />
-      <span className={styles.amount}>{type === 'tokens' ? `${amount} tokeni` : `${amount} VPS`}</span>
+      <span className={styles.amount}>{type === 'tokens' ? `${amount} tokeni` : `${amount} VPS hours`}</span>
     </span>
   )
 }

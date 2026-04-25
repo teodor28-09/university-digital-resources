@@ -234,8 +234,59 @@ export interface ResourceRequestResponse {
   amountRequested: number
   status: RequestStatus
   professorNote?: string | null
+  adminNote?: string | null
   createdAt: string
   updatedAt: string
+}
+
+export interface EnrollmentResponse {
+  courseId: string
+  courseName: string
+  professorName: string
+  maxStudents: number
+  enrolledCount: number
+  enrolledAt: string
+}
+
+export interface StudentCourseBrowseResponse {
+  course: CourseResponse
+  enrolled: boolean
+  enrolledCount: number
+}
+
+export interface StudentResourceBalanceResponse {
+  courseId: string
+  courseName: string
+  tokenBalance: number
+  vpsBalance: number
+}
+
+export interface SubmissionResponse {
+  id: string
+  courseId: string
+  originalFilename: string
+  contentType: string
+  size: number
+  createdAt: string
+}
+
+export interface TokenConsumptionResponse {
+  id: string
+  activityTypeId: string
+  activityTypeName: string
+  quantity: number
+  tokensConsumed: number
+  createdAt: string
+}
+
+export interface ConsumeTokensEntry {
+  activityTypeId: string
+  quantity: number
+}
+
+export interface CreateResourceRequestPayload {
+  resourceType: ResourceRequestType
+  amountRequested: number
 }
 
 // helper for multipart with session refresh
@@ -274,11 +325,74 @@ export const professorApi = {
 
   listResourceRequests: (courseId: string) => apiRequest<ResourceRequestResponse[]>(`/api/professor/courses/${encodeURIComponent(courseId)}/resource-requests`),
 
+  listAllResourceRequests: (courseId: string) =>
+    apiRequest<ResourceRequestResponse[]>(`/api/professor/courses/${encodeURIComponent(courseId)}/resource-requests/all`),
+
   deleteMaterial: (courseId: string, materialId: string) => apiRequest(`/api/professor/courses/${encodeURIComponent(courseId)}/materials/${encodeURIComponent(materialId)}`, { method: 'DELETE' }),
 
   approveResourceRequest: (requestId: string, note?: string) => apiRequest<ResourceRequestResponse>(`/api/professor/resource-requests/${encodeURIComponent(requestId)}/approve`, { method: 'PATCH', body: note ? { note } : undefined }),
 
   rejectResourceRequest: (requestId: string, note?: string) => apiRequest<ResourceRequestResponse>(`/api/professor/resource-requests/${encodeURIComponent(requestId)}/reject`, { method: 'PATCH', body: note ? { note } : undefined }),
+
+  forwardResourceRequest: (requestId: string, note?: string) => apiRequest<ResourceRequestResponse>(`/api/professor/resource-requests/${encodeURIComponent(requestId)}/forward`, { method: 'PATCH', body: note ? { note } : undefined }),
+}
+
+const FALLBACK_STUDENT_ACTIVITY_TYPES: ActivityType[] = [
+  { id: 'fallback-image-generation', name: 'Image generation', tokensRequired: 50, isActive: true },
+  { id: 'fallback-dev-assistance', name: 'Dev assistance', tokensRequired: 5000, isActive: true },
+]
+
+export const studentApi = {
+  listAvailableCourses: () => apiRequest<StudentCourseBrowseResponse[]>('/api/student/courses'),
+
+  listEnrolledCourses: () => apiRequest<EnrollmentResponse[]>('/api/student/courses/enrolled'),
+
+  enroll: (courseId: string) => apiRequest<EnrollmentResponse>(`/api/student/courses/${encodeURIComponent(courseId)}/enroll`, { method: 'POST' }),
+
+  listMaterials: (courseId: string) => apiRequest<CourseMaterialResponse[]>(`/api/student/courses/${encodeURIComponent(courseId)}/materials`),
+
+  getMaterialDownloadUrl: (courseId: string, materialId: string) => `${API_BASE_URL}/api/student/courses/${encodeURIComponent(courseId)}/materials/${encodeURIComponent(materialId)}/download`,
+
+  getBalance: (courseId: string) => apiRequest<StudentResourceBalanceResponse>(`/api/student/courses/${encodeURIComponent(courseId)}/balance`),
+
+  consumeTokens: (courseId: string, activities: ConsumeTokensEntry[]) =>
+    apiRequest<TokenConsumptionResponse[]>(`/api/student/courses/${encodeURIComponent(courseId)}/consume-tokens`, {
+      method: 'POST',
+      body: { activities },
+    }),
+
+  listTokenConsumption: (courseId: string) => apiRequest<TokenConsumptionResponse[]>(`/api/student/courses/${encodeURIComponent(courseId)}/consume-tokens`),
+
+  submitHomework: async (courseId: string, file: File) => {
+    const form = new FormData()
+    form.append('file', file)
+
+    const res = await fetchWithRefresh(`/api/student/courses/${encodeURIComponent(courseId)}/submissions`, { method: 'POST', body: form })
+    if (!res.ok) throw await parseError(res)
+    return (await res.json()) as SubmissionResponse
+  },
+
+  listSubmissions: (courseId: string) => apiRequest<SubmissionResponse[]>(`/api/student/courses/${encodeURIComponent(courseId)}/submissions`),
+
+  createResourceRequest: (courseId: string, payload: CreateResourceRequestPayload) =>
+    apiRequest<ResourceRequestResponse>(`/api/student/courses/${encodeURIComponent(courseId)}/resource-requests`, {
+      method: 'POST',
+      body: payload,
+    }),
+
+  listResourceRequests: (courseId: string) => apiRequest<ResourceRequestResponse[]>(`/api/student/courses/${encodeURIComponent(courseId)}/resource-requests`),
+
+  listActivityTypes: async () => {
+    try {
+      return await apiRequest<ActivityType[]>('/api/student/activity-types')
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 404) {
+        return FALLBACK_STUDENT_ACTIVITY_TYPES
+      }
+
+      throw err
+    }
+  },
 }
 
 // Admin course allocation + forwarded requests
@@ -289,7 +403,15 @@ export const adminCoursesApi = {
 
   listForwardedRequests: () => apiRequest<ResourceRequestResponse[]>('/api/admin/resource-requests/forwarded'),
 
-  approveForwardedRequest: (requestId: string) => apiRequest<ResourceRequestResponse>(`/api/admin/resource-requests/${encodeURIComponent(requestId)}/approve`, { method: 'PATCH' }),
+  approveForwardedRequest: (requestId: string, note?: string) =>
+    apiRequest<ResourceRequestResponse>(`/api/admin/resource-requests/${encodeURIComponent(requestId)}/approve`, {
+      method: 'PATCH',
+      body: note ? { note } : undefined,
+    }),
 
-  rejectForwardedRequest: (requestId: string) => apiRequest<ResourceRequestResponse>(`/api/admin/resource-requests/${encodeURIComponent(requestId)}/reject`, { method: 'PATCH' }),
+  rejectForwardedRequest: (requestId: string, note?: string) =>
+    apiRequest<ResourceRequestResponse>(`/api/admin/resource-requests/${encodeURIComponent(requestId)}/reject`, {
+      method: 'PATCH',
+      body: note ? { note } : undefined,
+    }),
 }

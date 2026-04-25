@@ -4,15 +4,28 @@ import { professorApi, ApiError, type CourseResponse, type CourseMaterialRespons
 import styles from '../admin/AdminDashboard.module.css'
 
 type Tab = 'materials' | 'requests'
+type RequestView = 'pending' | 'all'
+
+const requestStatusText = (status: ResourceRequestResponse['status']) => {
+  if (status === 'PENDING') return 'PENDING'
+  if (status === 'APPROVED') return 'APPROVED'
+  if (status === 'REJECTED') return 'REJECTED'
+  if (status === 'FORWARDED_TO_ADMIN') return 'FORWARDED_TO_ADMIN'
+  if (status === 'ADMIN_APPROVED') return 'ADMIN_APPROVED'
+  return 'ADMIN_REJECTED'
+}
 
 const CourseDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const [loading, setLoading] = useState(true)
   const [course, setCourse] = useState<CourseResponse | null>(null)
   const [materials, setMaterials] = useState<CourseMaterialResponse[]>([])
-  const [requests, setRequests] = useState<ResourceRequestResponse[]>([])
+  const [pendingRequests, setPendingRequests] = useState<ResourceRequestResponse[]>([])
+  const [allRequests, setAllRequests] = useState<ResourceRequestResponse[]>([])
   const [activeTab, setActiveTab] = useState<Tab>('materials')
+  const [requestView, setRequestView] = useState<RequestView>('pending')
   const [requestNotes, setRequestNotes] = useState<Record<string, string>>({})
+  const [bufferWarnings, setBufferWarnings] = useState<Record<string, string>>({})
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
 
@@ -20,10 +33,16 @@ const CourseDetailPage: React.FC = () => {
     if (!id) return
     setLoading(true)
     try {
-      const [c, m, r] = await Promise.all([professorApi.getCourse(id), professorApi.listMaterials(id), professorApi.listResourceRequests(id)])
+      const [c, m, pending, all] = await Promise.all([
+        professorApi.getCourse(id),
+        professorApi.listMaterials(id),
+        professorApi.listResourceRequests(id),
+        professorApi.listAllResourceRequests(id),
+      ])
       setCourse(c)
       setMaterials(m)
-      setRequests(r)
+      setPendingRequests(pending)
+      setAllRequests(all)
     } catch (err) {
       setCourse(null)
       if (err instanceof ApiError) {
@@ -53,18 +72,28 @@ const CourseDetailPage: React.FC = () => {
 
   const approve = async (reqId: string) => {
     setBusy(true); setNotice(null)
+    setBufferWarnings((prev) => {
+      const { [reqId]: _ignored, ...rest } = prev
+      return rest
+    })
     try {
-      const response = await professorApi.approveResourceRequest(reqId, requestNotes[reqId]?.trim() || undefined)
+      await professorApi.approveResourceRequest(reqId, requestNotes[reqId]?.trim() || undefined)
       await load()
-
-      if (response.status === 'FORWARDED_TO_ADMIN') {
-        setNotice('Request exceeded your available buffer and has been forwarded to the admin.')
-      } else {
-        setNotice('Cerere aprobată.')
-      }
+      setNotice('Cerere aprobată.')
     } catch (err) {
-      if (err instanceof ApiError) setNotice(err.message)
-      else setNotice('Eroare la aprobarea cererii.')
+      if (err instanceof ApiError) {
+        if (err.errorCode === 'EXCEEDS_PROFESSOR_BUFFER') {
+          setBufferWarnings((prev) => ({
+            ...prev,
+            [reqId]: 'This request exceeds your remaining buffer. You can forward it to the admin for approval.',
+          }))
+          setNotice('Request exceeds your remaining buffer.')
+        } else {
+          setNotice(err.message)
+        }
+      } else {
+        setNotice('Eroare la aprobarea cererii.')
+      }
     } finally { setBusy(false) }
   }
 
@@ -78,6 +107,25 @@ const CourseDetailPage: React.FC = () => {
       if (err instanceof ApiError) setNotice(err.message)
       else setNotice('Eroare la respingerea cererii.')
     } finally { setBusy(false) }
+  }
+
+  const forward = async (reqId: string) => {
+    setBusy(true)
+    setNotice(null)
+    try {
+      await professorApi.forwardResourceRequest(reqId, requestNotes[reqId]?.trim() || undefined)
+      await load()
+      setNotice('Cererea a fost trimisă către admin.')
+      setBufferWarnings((prev) => {
+        const { [reqId]: _ignored, ...rest } = prev
+        return rest
+      })
+    } catch (err) {
+      if (err instanceof ApiError) setNotice(err.message)
+      else setNotice('Eroare la forward către admin.')
+    } finally {
+      setBusy(false)
+    }
   }
 
   if (loading) return <div className={styles.empty}>Se încarcă...</div>
@@ -160,43 +208,91 @@ const CourseDetailPage: React.FC = () => {
       {activeTab === 'requests' && (
         <section>
           <h3>Cereri resurse</h3>
+          <div style={{ marginBottom: 12 }}>
+            <button className={styles.buttonSecondary} onClick={() => setRequestView('pending')} disabled={requestView === 'pending'}>
+              Pending ({pendingRequests.length})
+            </button>
+            <button className={styles.buttonSecondary} onClick={() => setRequestView('all')} disabled={requestView === 'all'} style={{ marginLeft: 8 }}>
+              All Requests
+            </button>
+          </div>
+
+          {requestView === 'pending' && (
           <div className={styles.tableWrap}>
             <table className={styles.table}>
               <thead>
-                <tr><th>Student</th><th>Resursă</th><th>Cantitate</th><th>Status</th><th>Note</th><th>Acțiuni</th></tr>
+                <tr><th>Student</th><th>Resursă</th><th>Cantitate</th><th>Data</th><th>Note</th><th>Acțiuni</th></tr>
               </thead>
               <tbody>
-                {requests.length === 0 && (
+                {pendingRequests.length === 0 && (
                   <tr>
                     <td colSpan={6} className={styles.empty}>Nu există cereri în așteptare.</td>
                   </tr>
                 )}
 
-                {requests.map((r) => (
-                  <tr key={r.id}>
-                    <td>{r.studentName}</td>
-                    <td>{r.resourceType}</td>
-                    <td>{r.amountRequested}</td>
-                    <td>{r.status}</td>
-                    <td>
-                      <input
-                        className={styles.input}
-                        placeholder="Notă opțională"
-                        value={requestNotes[r.id] ?? ''}
-                        onChange={(event) => setRequestNotes((prev) => ({ ...prev, [r.id]: event.target.value }))}
-                      />
-                    </td>
-                    <td>
-                      <div className={styles.actions}>
-                        <button className={styles.buttonPrimary} disabled={busy || r.status !== 'PENDING'} onClick={() => approve(r.id)}>Approve</button>
-                        <button className={styles.buttonSecondary} disabled={busy || r.status !== 'PENDING'} onClick={() => reject(r.id)}>Reject</button>
-                      </div>
-                    </td>
-                  </tr>
+                {pendingRequests.map((r) => (
+                  <React.Fragment key={r.id}>
+                    <tr>
+                      <td>{r.studentName}</td>
+                      <td>{r.resourceType === 'VPS' ? 'VPS hours' : 'TOKEN'}</td>
+                      <td>{r.amountRequested.toLocaleString()}</td>
+                      <td>{new Date(r.createdAt).toLocaleString()}</td>
+                      <td>
+                        <input
+                          className={styles.input}
+                          placeholder="Notă opțională"
+                          value={requestNotes[r.id] ?? ''}
+                          onChange={(event) => setRequestNotes((prev) => ({ ...prev, [r.id]: event.target.value }))}
+                        />
+                      </td>
+                      <td>
+                        <div className={styles.actions}>
+                          <button className={styles.buttonPrimary} disabled={busy} onClick={() => approve(r.id)}>Approve</button>
+                          <button className={styles.buttonSecondary} disabled={busy} onClick={() => reject(r.id)}>Reject</button>
+                          <button className={styles.buttonSecondary} disabled={busy} onClick={() => forward(r.id)}>Forward to Admin</button>
+                        </div>
+                      </td>
+                    </tr>
+                    {bufferWarnings[r.id] && (
+                      <tr>
+                        <td colSpan={6} className={styles.noticeError}>{bufferWarnings[r.id]}</td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 ))}
               </tbody>
             </table>
           </div>
+          )}
+
+          {requestView === 'all' && (
+            <div className={styles.tableWrap}>
+              <table className={styles.table}>
+                <thead>
+                  <tr><th>Student</th><th>Resursă</th><th>Cantitate</th><th>Status</th><th>Professor note</th><th>Admin note</th><th>Data</th></tr>
+                </thead>
+                <tbody>
+                  {allRequests.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className={styles.empty}>Nu există cereri în istoric.</td>
+                    </tr>
+                  )}
+
+                  {allRequests.map((r) => (
+                    <tr key={r.id}>
+                      <td>{r.studentName}</td>
+                      <td>{r.resourceType === 'VPS' ? 'VPS hours' : 'TOKEN'}</td>
+                      <td>{r.amountRequested.toLocaleString()}</td>
+                      <td>{requestStatusText(r.status)}</td>
+                      <td>{r.professorNote || '-'}</td>
+                      <td>{r.adminNote || '-'}</td>
+                      <td>{new Date(r.updatedAt).toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </section>
       )}
     </div>

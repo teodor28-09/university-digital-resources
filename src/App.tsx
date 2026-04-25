@@ -1,6 +1,6 @@
 import { BrowserRouter, Navigate, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { useCallback, useEffect, useState } from 'react'
-import { BookOpen, LayoutDashboard, LogOut, Mail, ShieldCheck, UserRoundPlus, Users, ClipboardList, Database } from 'lucide-react'
+import { BookOpen, LayoutDashboard, LogOut, Mail, UserRoundPlus, Users, ClipboardList, Database } from 'lucide-react'
 import LoginPage from './pages/Login'
 import RegisterPage from './pages/Register'
 import ForgotPassword from './pages/ForgotPassword'
@@ -14,7 +14,8 @@ import AdminForwardedRequestsPage from './pages/admin/AdminForwardedRequestsPage
 import NotFound from './pages/NotFound'
 import CoursesPage from './pages/profesor/CoursesPage'
 import CourseDetailPage from './pages/profesor/CourseDetailPage'
-import type { Course, User } from './types'
+import StudentCourseDetailPage from './pages/student/StudentCourseDetailPage'
+import type { User } from './types'
 import { authApi } from './lib/api'
 
 import styles from './App.module.css'
@@ -52,8 +53,8 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ role, onLogou
   const sidebarItems =
     role === 'student'
       ? [
-          { to: '/student', label: 'Dashboard', icon: LayoutDashboard },
-          { to: '/student', label: 'Cursuri', icon: BookOpen },
+          { to: '/student', label: 'Available Courses', icon: BookOpen },
+          { to: '/student/courses', label: 'My Courses', icon: LayoutDashboard },
         ]
       : role === 'admin'
         ? [
@@ -80,10 +81,12 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ role, onLogou
         <nav className={styles.sidebarNav}>
           {sidebarItems.map((item) => {
             const Icon = item.icon
+            const isStudentRoot = item.to === '/student'
             return (
               <NavLink
                 key={`${role}-${item.label}`}
                 to={item.to}
+                end={isStudentRoot}
                 className={({ isActive }) => `${styles.sidebarItem} ${isActive ? styles.sidebarItemActive : ''}`.trim()}
               >
                 <Icon {...iconProps} />
@@ -108,8 +111,6 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ role, onLogou
 interface AppRoutesProps {
   currentUser: User | null
   authReady: boolean
-  courses: Course[]
-  onEnroll: (courseId: string) => void
   onLogout: () => Promise<void>
   onAuthenticated: () => Promise<void>
 }
@@ -117,8 +118,6 @@ interface AppRoutesProps {
 const AppRoutes: React.FC<AppRoutesProps> = ({
   currentUser,
   authReady,
-  courses,
-  onEnroll,
   onLogout,
   onAuthenticated,
 }) => {
@@ -165,7 +164,27 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
           element={authReady && currentUser?.role === 'student'
             ? (
                 <AuthenticatedLayout role="student" onLogout={onLogout}>
-                  <StudentDashboard currentUser={currentUser} courses={courses} onEnroll={onEnroll} />
+                  <StudentDashboard />
+                </AuthenticatedLayout>
+              )
+            : <Navigate to="/login" replace />}
+        />
+        <Route
+          path="/student/courses"
+          element={authReady && currentUser?.role === 'student'
+            ? (
+                <AuthenticatedLayout role="student" onLogout={onLogout}>
+                  <StudentDashboard />
+                </AuthenticatedLayout>
+              )
+            : <Navigate to="/login" replace />}
+        />
+        <Route
+          path="/student/courses/:id"
+          element={authReady && currentUser?.role === 'student'
+            ? (
+                <AuthenticatedLayout role="student" onLogout={onLogout}>
+                  <StudentCourseDetailPage />
                 </AuthenticatedLayout>
               )
             : <Navigate to="/login" replace />}
@@ -278,43 +297,6 @@ function App() {
     void refreshCurrentUser()
   }, [refreshCurrentUser])
 
-  const [courses, setCourses] = useState<Course[]>([
-    {
-      id: 'c1',
-      name: 'Introducere în AI',
-      description: 'Bazele inteligenței artificiale',
-      professorId: 'u-prof-1',
-      professorName: 'Prof. Ionescu',
-      maxStudents: 30,
-      enrolledStudents: [],
-      resources: [{ type: 'tokens', amount: 500 }, { type: 'vps', amount: 1 }],
-      status: 'active',
-      createdAt: new Date().toISOString(),
-      materials: [],
-    },
-    {
-      id: 'c2',
-      name: 'Sisteme distribuite',
-      description: 'Tehnici pentru sisteme distribuite',
-      professorId: 'u-prof-1',
-      professorName: 'Prof. Ionescu',
-      maxStudents: 25,
-      enrolledStudents: [],
-      resources: [{ type: 'tokens', amount: 300 }],
-      status: 'active',
-      createdAt: new Date().toISOString(),
-      materials: [],
-    },
-  ])
-
-  const handleEnroll = (courseId: string) => {
-    if (!currentUser) {
-      return
-    }
-
-    setCourses((prev) => prev.map((c) => (c.id === courseId ? { ...c, enrolledStudents: Array.from(new Set([...c.enrolledStudents, currentUser.id])) } : c)))
-  }
-
   const handleLogout = async () => {
     try {
       await authApi.logout()
@@ -328,8 +310,6 @@ function App() {
       <AppRoutes
         currentUser={currentUser}
         authReady={authReady}
-        courses={courses}
-        onEnroll={handleEnroll}
         onLogout={handleLogout}
         onAuthenticated={refreshCurrentUser}
       />

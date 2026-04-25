@@ -17,6 +17,11 @@
   font-size: var(--font-size-sm);
 }
 
+/* Balance / small meta lines spacing */
+.pageBalance {
+  margin-bottom: var(--space-6);
+}
+
 .badge {
   display: inline-flex;
   align-items: center;
@@ -191,6 +196,15 @@
   background: var(--color-surface-raised);
 }
 
+/* Larger request button to avoid wrapping */
+.requestButton {
+  min-width: 160px;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .noticeSuccess,
 .noticeError {
   margin-top: var(--space-3);
@@ -207,6 +221,19 @@
 .noticeError {
   background: var(--color-error-light);
   color: var(--color-error);
+}
+
+/* Floating toast used for transient messages */
+.toast {
+  position: fixed;
+  right: var(--space-6);
+  bottom: var(--space-6);
+  z-index: 1200;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  font-size: var(--font-size-sm);
+  max-width: 360px;
 }
 
 .tableWrap {
