@@ -1,5 +1,5 @@
-import { BrowserRouter, Link, NavLink, Route, Routes, useLocation } from 'react-router-dom'
-import { useState } from 'react'
+import { BrowserRouter, Navigate, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
+import { useCallback, useEffect, useState } from 'react'
 import { BookOpen, GraduationCap, LayoutDashboard, LogOut, Mail, ShieldCheck, UserRoundPlus } from 'lucide-react'
 import LoginPage from './pages/Login'
 import RegisterPage from './pages/Register'
@@ -8,6 +8,7 @@ import ResetPassword from './pages/ResetPassword'
 import StudentDashboard from './pages/student/StudentDashboard'
 import ProfesorDashboard from './pages/profesor/ProfesorDashboard'
 import type { Course, User } from './types'
+import { authApi } from './lib/api'
 
 import styles from './App.module.css'
 
@@ -15,12 +16,29 @@ const iconProps = { size: 16, strokeWidth: 1.5 }
 
 type Role = 'student' | 'profesor'
 
+const rolePathMap: Record<string, string> = {
+  STUDENT: '/student',
+  PROFESSOR: '/profesor',
+  ADMIN: '/profesor',
+  AUDIT: '/profesor',
+}
+
+const mapRoleToAppRole = (role: string): Role => (role === 'STUDENT' ? 'student' : 'profesor')
+
+const toAppUser = (profile: { id: string; email: string; firstName: string; lastName: string; role: string }): User => ({
+  id: profile.id,
+  email: profile.email,
+  name: `${profile.firstName} ${profile.lastName}`.trim(),
+  role: mapRoleToAppRole(profile.role),
+})
+
 interface AuthenticatedLayoutProps {
   role: Role
+  onLogout: () => Promise<void>
   children: React.ReactNode
 }
 
-const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ role, children }) => {
+const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ role, onLogout, children }) => {
   const sidebarItems =
     role === 'student'
       ? [
@@ -55,10 +73,10 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ role, childre
               </NavLink>
             )
           })}
-          <Link to="/login" className={styles.sidebarItem}>
+          <button type="button" className={`${styles.sidebarItem} ${styles.sidebarButton}`} onClick={onLogout}>
             <LogOut {...iconProps} />
             Logout
-          </Link>
+          </button>
         </nav>
       </aside>
 
@@ -70,16 +88,37 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ role, childre
 }
 
 interface AppRoutesProps {
-  studentUser: User
-  profesorUser: User
+  currentUser: User | null
+  authReady: boolean
   courses: Course[]
   onEnroll: (courseId: string) => void
   onCreateCourse: (courseData: Omit<Course, 'id' | 'createdAt' | 'enrolledStudents' | 'materials'>) => void
+  onLogout: () => Promise<void>
+  onAuthenticated: () => Promise<void>
 }
 
-const AppRoutes: React.FC<AppRoutesProps> = ({ studentUser, profesorUser, courses, onEnroll, onCreateCourse }) => {
+const AppRoutes: React.FC<AppRoutesProps> = ({
+  currentUser,
+  authReady,
+  courses,
+  onEnroll,
+  onCreateCourse,
+  onLogout,
+  onAuthenticated,
+}) => {
   const location = useLocation()
+  const navigate = useNavigate()
   const isAuthenticatedPath = location.pathname.startsWith('/student') || location.pathname.startsWith('/profesor')
+
+  useEffect(() => {
+    if (!authReady || !currentUser) {
+      return
+    }
+
+    if (location.pathname === '/' || location.pathname === '/login' || location.pathname === '/register') {
+      navigate(rolePathMap[currentUser.role.toUpperCase()] ?? '/login', { replace: true })
+    }
+  }, [authReady, currentUser, location.pathname, navigate])
 
   return (
     <div className={styles.appShell}>
@@ -105,27 +144,31 @@ const AppRoutes: React.FC<AppRoutesProps> = ({ studentUser, profesorUser, course
       )}
 
       <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/login" element={<LoginPage onAuthenticated={onAuthenticated} />} />
+        <Route path="/register" element={<RegisterPage onAuthenticated={onAuthenticated} />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route
           path="/student"
-          element={(
-            <AuthenticatedLayout role="student">
-              <StudentDashboard currentUser={studentUser} courses={courses} onEnroll={onEnroll} />
-            </AuthenticatedLayout>
-          )}
+          element={authReady && currentUser?.role === 'student'
+            ? (
+                <AuthenticatedLayout role="student" onLogout={onLogout}>
+                  <StudentDashboard currentUser={currentUser} courses={courses} onEnroll={onEnroll} />
+                </AuthenticatedLayout>
+              )
+            : <Navigate to="/login" replace />}
         />
         <Route
           path="/profesor"
-          element={(
-            <AuthenticatedLayout role="profesor">
-              <ProfesorDashboard currentUser={profesorUser} courses={courses} onCreateCourse={onCreateCourse} />
-            </AuthenticatedLayout>
-          )}
+          element={authReady && currentUser?.role === 'profesor'
+            ? (
+                <AuthenticatedLayout role="profesor" onLogout={onLogout}>
+                  <ProfesorDashboard currentUser={currentUser} courses={courses} onCreateCourse={onCreateCourse} />
+                </AuthenticatedLayout>
+              )
+            : <Navigate to="/login" replace />}
         />
-        <Route path="/" element={<LoginPage />} />
+        <Route path="/" element={<LoginPage onAuthenticated={onAuthenticated} />} />
         <Route path="*" element={<div>Pagina nu a fost gasita (404)</div>} />
       </Routes>
     </div>
@@ -133,19 +176,33 @@ const AppRoutes: React.FC<AppRoutesProps> = ({ studentUser, profesorUser, course
 }
 
 function App() {
-  // mock users for demo; replace with real auth in future
-  const studentUser: User = { id: 'u-student-1', name: 'Maria Student', email: 'maria@student.local', role: 'student' }
-  const profesorUser: User = { id: 'u-prof-1', name: 'Prof. Ionescu', email: 'ionescu@uni.local', role: 'profesor' }
+  const [currentUser, setCurrentUser] = useState<User | null>(null)
+  const [authReady, setAuthReady] = useState(false)
+
+  const refreshCurrentUser = useCallback(async () => {
+    try {
+      const profile = await authApi.getMe()
+      setCurrentUser(toAppUser(profile))
+    } catch {
+      setCurrentUser(null)
+    } finally {
+      setAuthReady(true)
+    }
+  }, [])
+
+  useEffect(() => {
+    void refreshCurrentUser()
+  }, [refreshCurrentUser])
 
   const [courses, setCourses] = useState<Course[]>([
     {
       id: 'c1',
       name: 'Introducere în AI',
       description: 'Bazele inteligenței artificiale',
-      professorId: profesorUser.id,
-      professorName: profesorUser.name,
+      professorId: 'u-prof-1',
+      professorName: 'Prof. Ionescu',
       maxStudents: 30,
-      enrolledStudents: [studentUser.id],
+      enrolledStudents: [],
       resources: [{ type: 'tokens', amount: 500 }, { type: 'vps', amount: 1 }],
       status: 'active',
       createdAt: new Date().toISOString(),
@@ -155,8 +212,8 @@ function App() {
       id: 'c2',
       name: 'Sisteme distribuite',
       description: 'Tehnici pentru sisteme distribuite',
-      professorId: profesorUser.id,
-      professorName: profesorUser.name,
+      professorId: 'u-prof-1',
+      professorName: 'Prof. Ionescu',
       maxStudents: 25,
       enrolledStudents: [],
       resources: [{ type: 'tokens', amount: 300 }],
@@ -167,7 +224,19 @@ function App() {
   ])
 
   const handleEnroll = (courseId: string) => {
-    setCourses((prev) => prev.map((c) => (c.id === courseId ? { ...c, enrolledStudents: Array.from(new Set([...c.enrolledStudents, studentUser.id])) } : c)))
+    if (!currentUser) {
+      return
+    }
+
+    setCourses((prev) => prev.map((c) => (c.id === courseId ? { ...c, enrolledStudents: Array.from(new Set([...c.enrolledStudents, currentUser.id])) } : c)))
+  }
+
+  const handleLogout = async () => {
+    try {
+      await authApi.logout()
+    } finally {
+      setCurrentUser(null)
+    }
   }
 
   const handleCreateCourse = (courseData: Omit<Course, 'id' | 'createdAt' | 'enrolledStudents' | 'materials'>) => {
@@ -184,11 +253,13 @@ function App() {
   return (
     <BrowserRouter>
       <AppRoutes
-        studentUser={studentUser}
-        profesorUser={profesorUser}
+        currentUser={currentUser}
+        authReady={authReady}
         courses={courses}
         onEnroll={handleEnroll}
         onCreateCourse={handleCreateCourse}
+        onLogout={handleLogout}
+        onAuthenticated={refreshCurrentUser}
       />
     </BrowserRouter>
   )

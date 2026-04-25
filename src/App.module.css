@@ -95,6 +95,14 @@
   transition: background 150ms ease, color 150ms ease, transform 150ms ease;
 }
 
+.sidebarButton {
+  width: 100%;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
 .sidebarItem:hover,
 .sidebarItemActive {
   background: rgb(99 102 241 / 22%);

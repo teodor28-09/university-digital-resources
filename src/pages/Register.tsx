@@ -1,11 +1,41 @@
-import React from 'react'
+import React, { useState } from 'react'
 import AuthForm from '../components/AuthForm'
 import styles from './Register.module.css'
+import { ApiError, authApi } from '../lib/api'
+import { useNavigate } from 'react-router-dom'
 
-const RegisterPage: React.FC = () => {
-  const handleRegister = (data: { email: string; password: string; name?: string }) => {
-    // TODO: connect with backend (Spring) — create account
-    console.log('register', data)
+interface RegisterPageProps {
+  onAuthenticated: () => Promise<void>
+}
+
+const RegisterPage: React.FC<RegisterPageProps> = ({ onAuthenticated }) => {
+  const navigate = useNavigate()
+  const [error, setError] = useState<string | null>(null)
+
+  const handleRegister = async (data: { email: string; password: string; firstName?: string; lastName?: string }) => {
+    setError(null)
+
+    if (!data.firstName || !data.lastName) {
+      setError('Completează prenumele și numele.')
+      return
+    }
+
+    try {
+      await authApi.register({
+        email: data.email,
+        password: data.password,
+        firstName: data.firstName,
+        lastName: data.lastName,
+      })
+      await onAuthenticated()
+      navigate('/student', { replace: true })
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.errors[0] ?? 'Înregistrarea a eșuat.')
+      } else {
+        setError('A apărut o eroare neașteptată.')
+      }
+    }
   }
 
   return (
@@ -23,6 +53,7 @@ const RegisterPage: React.FC = () => {
         </div>
         <div>
           <AuthForm mode="register" onSubmit={handleRegister} />
+          {error && <div className={styles.formError}>{error}</div>}
         </div>
       </div>
     </div>

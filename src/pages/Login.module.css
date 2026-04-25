@@ -80,6 +80,12 @@
   text-align: right;
 }
 
+.formError {
+  margin-top: var(--space-3);
+  color: var(--color-error);
+  font-size: var(--font-size-sm);
+}
+
 .forgotLink {
   color: var(--color-accent);
   text-decoration: none;

@@ -1,12 +1,38 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
+import React, { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import AuthForm from '../components/AuthForm'
 import styles from './Login.module.css'
+import { ApiError, authApi } from '../lib/api'
 
-const LoginPage: React.FC = () => {
-  const handleLogin = (data: { email: string; password: string }) => {
-    // TODO: connect with backend (Spring) — send credentials, handle response
-    console.log('login', data)
+interface LoginPageProps {
+  onAuthenticated: () => Promise<void>
+}
+
+const rolePathMap: Record<string, string> = {
+  STUDENT: '/student',
+  PROFESSOR: '/profesor',
+  ADMIN: '/profesor',
+  AUDIT: '/profesor',
+}
+
+const LoginPage: React.FC<LoginPageProps> = ({ onAuthenticated }) => {
+  const navigate = useNavigate()
+  const [error, setError] = useState<string | null>(null)
+
+  const handleLogin = async (data: { email: string; password: string }) => {
+    setError(null)
+
+    try {
+      const response = await authApi.login(data)
+      await onAuthenticated()
+      navigate(rolePathMap[response.role] ?? '/login', { replace: true })
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.errors[0] ?? 'Autentificarea a eșuat.')
+      } else {
+        setError('A apărut o eroare neașteptată.')
+      }
+    }
   }
 
   return (
@@ -23,6 +49,7 @@ const LoginPage: React.FC = () => {
         </div>
         <div>
           <AuthForm mode="login" onSubmit={handleLogin} />
+          {error && <div className={styles.formError}>{error}</div>}
           <div className={styles.forgotWrap}>
             <Link to="/forgot-password" className={styles.forgotLink}>Ai uitat parola?</Link>
           </div>

@@ -75,6 +75,12 @@
   font-size: var(--font-size-xs);
 }
 
+.formError {
+  margin-top: var(--space-3);
+  color: var(--color-error);
+  font-size: var(--font-size-sm);
+}
+
 @media (max-width: 900px) {
   .page {
     min-height: auto;
