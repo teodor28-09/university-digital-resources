@@ -1,5 +1,6 @@
 import React from 'react'
 import AuthForm from '../components/AuthForm'
+import styles from './Register.module.css'
 
 const RegisterPage: React.FC = () => {
   const handleRegister = (data: { email: string; password: string; name?: string }) => {
@@ -8,13 +9,19 @@ const RegisterPage: React.FC = () => {
   }
 
   return (
-    <div style={{ padding: '28px', display: 'flex', justifyContent: 'center' }}>
-      <div style={{ width: '100%', maxWidth: 980, display: 'flex', gap: 32, alignItems: 'center' }}>
-        <div style={{ flex: 1 }}>
-          <h1>Înregistrare</h1>
-          <p>Creează un cont pe UniDigital pentru a începe.</p>
+    <div className={styles.page}>
+      <div className={styles.layout}>
+        <div>
+          <div className={styles.kicker}>UniDigital Onboarding</div>
+          <h1 className={styles.heroTitle}>Înregistrare</h1>
+          <p className={styles.heroSubtitle}>Creează un cont pe UniDigital pentru a începe.</p>
+          <div className={styles.heroPills}>
+            <span className={styles.heroPill}>Courses</span>
+            <span className={styles.heroPill}>Resources</span>
+            <span className={styles.heroPill}>Audit Ready</span>
+          </div>
         </div>
-        <div style={{ width: 420 }}>
+        <div>
           <AuthForm mode="register" onSubmit={handleRegister} />
         </div>
       </div>

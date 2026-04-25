@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
+import { CheckCircle, Clock } from 'lucide-react'
 import type { Course, User, DigitalResource } from '../../types'
 import styles from './ProfesorDashboard.module.css'
-import ResourceChip from '../../components/shared/ResourceChip'
 
 interface ProfesorDashboardProps {
   currentUser: User
@@ -52,14 +52,10 @@ export const ProfesorDashboard: React.FC<ProfesorDashboardProps> = ({ currentUse
       professorId: currentUser.id,
       professorName: currentUser.name,
       maxStudents: formData.maxStudents,
-      enrolledStudents: [],
       resources,
       allocatedResources: undefined,
       professorBuffer: undefined,
       status: 'draft',
-      createdAt: new Date().toISOString(),
-      materials: [],
-      id: '',
     }
 
     // Omit fields according to prop signature — remove id & createdAt & enrolledStudents & materials
@@ -86,17 +82,34 @@ export const ProfesorDashboard: React.FC<ProfesorDashboardProps> = ({ currentUse
   }
 
   return (
-    <div style={{ padding: 28 }}>
+    <div>
       <div className={styles.header}>
-        <h1 className={styles.pageTitle}>Cursurile mele</h1>
         <div>
-          <button className="btn" onClick={() => setShowModal(true)}>Creează curs nou</button>
+          <div className={styles.kicker}>Profesor workspace</div>
+          <h1 className={styles.pageTitle}>Cursurile mele</h1>
+          <p className={styles.subtitle}>Gestionează cursurile, resursele și alocările.</p>
+        </div>
+        <button className={styles.buttonPrimary} onClick={() => setShowModal(true)}>Creează curs nou</button>
+      </div>
+
+      <div className={styles.statsRow}>
+        <div className={styles.statCard}>
+          <div className={styles.statLabel}>Cursuri totale</div>
+          <div className={styles.statValue}>{myCourses.length}</div>
+        </div>
+        <div className={styles.statCard}>
+          <div className={styles.statLabel}>Active</div>
+          <div className={styles.statValue}>{myCourses.filter((course) => course.status === 'active').length}</div>
+        </div>
+        <div className={styles.statCard}>
+          <div className={styles.statLabel}>Studenți înscriși</div>
+          <div className={styles.statValue}>{myCourses.reduce((total, course) => total + course.enrolledStudents.length, 0)}</div>
         </div>
       </div>
 
       <div className={styles.tableWrap}>
-        <table>
-          <thead>
+        <table className={styles.table}>
+          <thead className={styles.tableHead}>
             <tr>
               <th>Nume curs</th>
               <th>Studenți</th>
@@ -106,7 +119,7 @@ export const ProfesorDashboard: React.FC<ProfesorDashboardProps> = ({ currentUse
               <th>Acțiuni</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className={styles.tableBody}>
             {myCourses.length === 0 && (
               <tr>
                 <td colSpan={6} className={styles.emptyState}>Nu ai creat niciun curs.</td>
@@ -120,20 +133,24 @@ export const ProfesorDashboard: React.FC<ProfesorDashboardProps> = ({ currentUse
                   <td>{c.name}</td>
                   <td>{c.enrolledStudents.length}</td>
                   <td>
-                    {c.resources.map((r) => (
-                      <span key={r.type} className={styles.resourceBadge} style={{ marginRight: 6 }}>{r.type === 'tokens' ? `${r.amount} tokeni` : `${r.amount} VPS`}</span>
-                    ))}
+                    <div className={styles.resourceList}>
+                      {c.resources.map((r) => (
+                        <span key={r.type} className={styles.resourceBadge}>{r.type === 'tokens' ? `${r.amount} tokeni` : `${r.amount} VPS`}</span>
+                      ))}
+                    </div>
                   </td>
                   <td>
                     {allocated ? (
-                      <span className={styles.bufferBadge}>{`+${professorTokenBuffer} tokeni | +${professorVpsBuffer} VPS`}</span>
+                      <span className={styles.bufferBadge}><CheckCircle size={16} strokeWidth={1.5} /> {`+${professorTokenBuffer} tokeni | +${professorVpsBuffer} VPS`}</span>
                     ) : (
-                      <span className={styles.pendingBadge}>În așteptare alocare</span>
+                      <span className={styles.pendingBadge}><Clock size={16} strokeWidth={1.5} /> În așteptare alocare</span>
                     )}
                   </td>
                   <td><span>{c.status === 'active' ? 'Activ' : c.status === 'closed' ? 'Închis' : 'Draft'}</span></td>
                   <td>
-                    <button className="btn">Vizualizează</button>
+                    <div className={styles.actionsRow}>
+                      <button className={styles.buttonSecondary}>Vizualizează</button>
+                    </div>
                   </td>
                 </tr>
               )
@@ -148,7 +165,7 @@ export const ProfesorDashboard: React.FC<ProfesorDashboardProps> = ({ currentUse
             <div className={styles.modalHeader}>
               <div className={styles.modalTitle}>Creează curs nou</div>
               <div>
-                <button className="btn" onClick={() => setShowModal(false)}>Închide</button>
+                <button className={styles.buttonSecondary} onClick={() => setShowModal(false)}>Închide</button>
               </div>
             </div>
             <form onSubmit={handleCreate}>
@@ -201,15 +218,15 @@ export const ProfesorDashboard: React.FC<ProfesorDashboardProps> = ({ currentUse
                 {errors.resources && <div className={styles.formError}>{errors.resources}</div>}
               </div>
               <div className={styles.modalFooter}>
-                <button type="button" className="btn" onClick={() => setShowModal(false)}>Anulează</button>
-                <button type="submit" className="btn">Creează curs</button>
+                <button type="button" className={styles.buttonSecondary} onClick={() => setShowModal(false)}>Anulează</button>
+                <button type="submit" className={styles.buttonPrimary}>Creează curs</button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {notification && <div style={{ position: 'fixed', bottom: 24, right: 24, background: 'var(--color-success-bg)', border: '1px solid var(--color-success-border)', color: 'var(--color-success-text)', padding: '12px 18px', borderRadius: 'var(--radius-md)' }}>{notification}</div>}
+      {notification && <div className={styles.notification}>{notification}</div>}
     </div>
   )
 }

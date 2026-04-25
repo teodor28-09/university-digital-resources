@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { Link } from 'react-router-dom'
 import styles from './AuthForm.module.css'
 
 interface AuthFormProps {
@@ -45,16 +46,12 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onSubmit }) => {
             </div>
             <div className={styles.hint}>
               {mode === 'login' ? 'Nu ai cont?' : 'Ai deja cont?'}
-              <a href={mode === 'login' ? '/register' : '/login'}>
+              <Link to={mode === 'login' ? '/register' : '/login'} className={styles.inlineLink}>
                 {mode === 'login' ? ' Înregistrează-te.' : ' Autentifică-te.'}
-              </a>
-             
+              </Link>
             </div>
-             
           </div>
-          <a href={mode === 'login' ? '/forgot-password' : ''}>
-                {mode === 'login' ? ' Ai uitat parola?' : ''}
-              </a>
+        
         </form>
       </div>
     </div>

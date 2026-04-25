@@ -31,8 +31,9 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ currentUser,
   }
 
   return (
-    <div style={{ padding: 28 }}>
+    <div>
       <h1 className={styles.pageTitle}>Cursurile mele</h1>
+      <p className={styles.pageSubtitle}>Monitorizează progresul și înscrie-te la cursuri noi.</p>
       <div className={styles.grid}>
         {enrolledCourses.length === 0 && <div className={styles.emptyState}>Nu ești înscris la niciun curs.</div>}
         {enrolledCourses.map((course) => {
@@ -46,11 +47,11 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ currentUser,
             <div key={course.id} className={styles.courseCard}>
               <div className={styles.courseName}>{course.name}</div>
               <div className={styles.professorName}>{course.professorName}</div>
-              <div style={{ marginBottom: 8 }}><StatusBadge status={course.status} /></div>
+              <div className={styles.statusRow}><StatusBadge status={course.status} /></div>
 
               {tokenResource && (
                 <div>
-                  <div style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>{`${usedTokens} / ${totalTokens} tokeni folosiți`}</div>
+                  <div className={styles.usageText}>{`${usedTokens} / ${totalTokens} tokeni folosiți`}</div>
                   <div className={styles.progressTrack}>
                     <div className={styles.progressFill} style={{ width: `${percent}%` }} />
                   </div>
@@ -58,7 +59,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ currentUser,
               )}
 
               {vpsResource && (
-                <div style={{ marginTop: 8, fontSize: 13, color: 'var(--color-text-secondary)' }}>{`${vpsResource.amount} VPS`}</div>
+                <div className={styles.usageText}>{`${vpsResource.amount} VPS`}</div>
               )}
 
               <div className={styles.actions}>
@@ -71,7 +72,9 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ currentUser,
 
       <div className={styles.sectionDivider} />
 
-      <h2 className={styles.sectionTitle}>Cursuri disponibile</h2>
+      <div className={styles.section}>
+        <h2 className={styles.sectionTitle}>Cursuri disponibile</h2>
+      </div>
       <div className={styles.grid}>
         {availableCourses.length === 0 && <div className={styles.emptyState}>Nu sunt cursuri disponibile.</div>}
         {availableCourses.map((course) => {
@@ -83,12 +86,12 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ currentUser,
               <div className={styles.courseName}>{course.name}</div>
               <div className={styles.professorName}>{course.professorName}</div>
               <div className={`${styles.spotsText} ${lowSpots ? styles.spotsWarning : ''}`}>
-                {full ? <span style={{ color: 'var(--color-error-text)', fontWeight: 600 }}>Complet</span> : `${spotsLeft} / ${course.maxStudents} locuri disponibile`}
+                {full ? <span className={styles.spotsError}>Complet</span> : `${spotsLeft} / ${course.maxStudents} locuri disponibile`}
               </div>
 
-              <div style={{ marginBottom: 8 }}>
+              <div className={styles.resourceWrap}>
                 {(course.resources || []).map((r) => (
-                  <span key={r.type} className={styles.resourceChip}><ResourceChip type={r.type} amount={r.amount} /></span>
+                  <ResourceChip key={r.type} type={r.type} amount={r.amount} />
                 ))}
               </div>
 

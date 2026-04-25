@@ -1,6 +1,7 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import AuthForm from '../components/AuthForm'
+import styles from './Login.module.css'
 
 const LoginPage: React.FC = () => {
   const handleLogin = (data: { email: string; password: string }) => {
@@ -9,16 +10,21 @@ const LoginPage: React.FC = () => {
   }
 
   return (
-    <div style={{ padding: '28px', display: 'flex', justifyContent: 'center' }}>
-      <div style={{ width: '100%', maxWidth: 980, display: 'flex', gap: 32, alignItems: 'center' }}>
-        <div style={{ flex: 1 }}>
-          <h1>Autentificare</h1>
-          <p>Conectează-te la platforma UniDigital pentru a accesa cursurile tale.</p>
+    <div className={styles.page}>
+      <div className={styles.layout}>
+        <div>
+          <div className={styles.kicker}>UniDigital Platform</div>
+          <h1 className={styles.heroTitle}>Autentificare</h1>
+          <p className={styles.heroSubtitle}>Conectează-te la platforma UniDigital pentru a accesa cursurile tale.</p>
+          <div className={styles.heroPills}>
+            <span className={styles.heroPill}>Academic Cloud</span>
+            <span className={styles.heroPill}>Secure Access</span>
+          </div>
         </div>
-        <div style={{ width: 420 }}>
+        <div>
           <AuthForm mode="login" onSubmit={handleLogin} />
-          <div style={{ marginTop: 12, textAlign: 'right' }}>
-            <Link to="/forgot-password" style={{ fontSize: 13, color: 'var(--color-primary-600)', textDecoration: 'none' }}>Ai uitat parola?</Link>
+          <div className={styles.forgotWrap}>
+            <Link to="/forgot-password" className={styles.forgotLink}>Ai uitat parola?</Link>
           </div>
         </div>
       </div>

@@ -1,19 +1,23 @@
 .badge {
   border-radius: var(--radius-full);
-  padding: 3px 10px;
-  font-size: 11px;
-  font-weight: 600;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
   text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
+
 .draft {
-  background: var(--color-bg-muted);
-  color: var(--color-text-muted);
+  background: var(--color-surface-raised);
+  color: var(--color-text-secondary);
 }
+
 .active {
-  background: var(--color-success-bg);
-  color: var(--color-success-text);
+  background: var(--color-success-light);
+  color: var(--color-success);
 }
+
 .closed {
-  background: var(--color-error-bg);
-  color: var(--color-error-text);
+  background: var(--color-error-light);
+  color: var(--color-error);
 }

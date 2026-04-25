@@ -54,7 +54,7 @@ const ResetPassword: React.FC = () => {
           {error && <div className={styles.error}>{error}</div>}
 
           <div className={styles.actions}>
-            <Link to="/login" style={{ fontSize: 13, color: 'var(--color-primary-600)', textDecoration: 'none' }}>Anulează</Link>
+            <Link to="/login" className={styles.cancelLink}>Anulează</Link>
             <button type="submit" className={styles.submit}>Schimbă parola</button>
           </div>
         </form>
