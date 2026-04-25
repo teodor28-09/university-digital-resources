@@ -10,6 +10,7 @@ import ProfesorDashboard from './pages/profesor/ProfesorDashboard'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminActivityTypesPage from './pages/admin/AdminActivityTypesPage'
 import AdminResourcePoolsPage from './pages/admin/AdminResourcePoolsPage'
+import NotFound from './pages/NotFound'
 import type { Course, User } from './types'
 import { authApi } from './lib/api'
 
@@ -150,14 +151,6 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
             <UserRoundPlus {...iconProps} />
             Inregistrare
           </NavLink>
-          <NavLink to="/student" className={({ isActive }) => `${styles.publicNavLink} ${isActive ? styles.publicNavLinkActive : ''}`.trim()}>
-            <LayoutDashboard {...iconProps} />
-            Student
-          </NavLink>
-          <NavLink to="/profesor" className={({ isActive }) => `${styles.publicNavLink} ${isActive ? styles.publicNavLinkActive : ''}`.trim()}>
-            <ShieldCheck {...iconProps} />
-            Profesor
-          </NavLink>
         </header>
       )}
 
@@ -223,7 +216,7 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
             : <Navigate to="/login" replace />}
         />
         <Route path="/" element={<LoginPage onAuthenticated={onAuthenticated} />} />
-        <Route path="*" element={<div>Pagina nu a fost gasita (404)</div>} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </div>
   )

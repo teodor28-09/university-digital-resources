@@ -1,0 +1,51 @@
+.root {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 60vh;
+  text-align: center;
+  padding: 32px;
+}
+
+.card {
+  max-width: 720px;
+  background: var(--bg-card, #ffffff);
+  border-radius: 12px;
+  padding: 28px 32px;
+  box-shadow: 0 6px 18px rgba(17, 24, 39, 0.06);
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  color: var(--muted, #6b7280);
+  margin-bottom: 18px;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+.buttonPrimary {
+  background: var(--color-primary, #0f172a);
+  color: #fff;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.buttonGhost {
+  background: transparent;
+  border: 1px solid rgba(15,23,42,0.08);
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+}
